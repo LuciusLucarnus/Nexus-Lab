@@ -1,0 +1,2408 @@
+<!DOCTYPE html>
+<html lang="de" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXUS LAB - Sensory Perception Suite & Arcade</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Space Grotesk', 'monospace'],
+                    },
+                    colors: {
+                        nexus: {
+                            bg: '#05070d',
+                            card: '#0e1320',
+                            border: '#1b2438',
+                            cyan: '#06b6d4',
+                            purple: '#a855f7',
+                            amber: '#f59e0b',
+                            rose: '#f43f5e',
+                            emerald: '#10b981',
+                            indigo: '#6366f1'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #05070d;
+            color: #f3f4f6;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .glass-panel {
+            background: rgba(14, 19, 32, 0.85);
+            backdrop-filter: blur(18px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-card {
+            background: linear-gradient(135deg, rgba(14, 19, 32, 0.9) 0%, rgba(20, 27, 45, 0.7) 100%);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            transition: all 0.25s ease;
+        }
+
+        .glass-card:hover {
+            border-color: rgba(168, 85, 247, 0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px -10px rgba(168, 85, 247, 0.25);
+        }
+
+        /* Custom Range Slider Styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: #1e293b;
+            height: 10px;
+            border-radius: 999px;
+            outline: none;
+            width: 100%;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 3px solid #a855f7;
+            cursor: pointer;
+            box-shadow: 0 0 12px rgba(168, 85, 247, 0.6);
+            transition: transform 0.1s ease, background 0.1s ease;
+        }
+
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+            background: #f8fafc;
+        }
+
+        .radar-grid {
+            background-image: radial-gradient(rgba(6, 182, 212, 0.15) 1px, transparent 0);
+            background-size: 24px 24px;
+        }
+
+        .pro-mode-active {
+            border-color: rgba(244, 63, 94, 0.6) !important;
+            box-shadow: 0 0 20px rgba(244, 63, 94, 0.2);
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #05070d;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1b2438;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between items-center p-3 sm:p-6 font-sans">
+
+    <header class="w-full max-w-4xl flex flex-wrap items-center justify-between py-3 border-b border-slate-800/80 mb-6 gap-3">
+        <div class="flex items-center gap-3 cursor-pointer" id="logoBtn">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 via-purple-600 to-rose-500 flex items-center justify-center font-mono font-black text-xl text-white shadow-lg shadow-purple-500/20">
+                DN
+            </div>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight font-mono text-white flex items-center gap-2">
+                    NEXUS <span class="text-xs px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">LAB</span>
+                </h1>
+                <p class="text-xs text-slate-400">Sinnes- Lab (20 Disziplinen incl. Koop Mittelwert & 1v1)</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <!-- Game Play Mode Selector (Solo / Duel / Co-Op) -->
+            <div class="flex bg-slate-900/90 border border-slate-800 p-1 rounded-xl font-mono text-xs" id="modeHeaderToggle">
+                <button data-mode="solo" class="mode-select-btn px-2.5 py-1 rounded-lg text-white bg-purple-600 transition flex items-center gap-1">
+                    <span class="text-[10px]">👤</span> <span class="hidden sm:inline">Solo</span>
+                </button>
+                <button data-mode="duel" class="mode-select-btn px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition flex items-center gap-1">
+                    <span class="text-[10px]">⚔️</span> <span class="hidden sm:inline">Duell (1v1)</span>
+                </button>
+                <button data-mode="coop" class="mode-select-btn px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition flex items-center gap-1" title="Mittelwert aus beiden Spielereingaben">
+                    <span class="text-[10px]">🤝</span> <span class="hidden sm:inline">Koop (Mittelwert)</span>
+                </button>
+            </div>
+
+            <!-- Pro Mode Toggle -->
+            <button id="proModeBtn" class="px-3 py-2 rounded-xl glass-panel text-slate-400 hover:text-white transition flex items-center gap-1.5 text-xs font-mono border border-slate-800" title="Streamer Hardcore Pro-Modus">
+                <span class="text-slate-500" id="proModeIcon">🔥</span>
+                <span class="hidden sm:inline">PRO</span>
+            </button>
+
+            <!-- Sound Toggle -->
+            <button id="soundToggleBtn" class="p-2.5 rounded-xl glass-panel text-slate-300 hover:text-white hover:bg-slate-800 transition" title="Ton umschalten">
+                <span id="soundIcon" class="text-sm">🔊</span>
+            </button>
+            <!-- Musik Toggle -->
+            <button id="musicToggleBtn" class="p-2.5 rounded-xl glass-panel text-slate-300 hover:text-white hover:bg-slate-800 transition" title="Hintergrundmusik an/aus">
+                <span id="musicIcon" class="text-sm">🎵</span>
+            </button>
+            <!-- Discord -->
+            <a id="discordBtn" href="https://discord.gg/6drX9t44Sa" target="_blank" rel="noopener noreferrer" aria-label="Discord beitreten" title="Discord beitreten" class="w-10 h-10 shrink-0 rounded-xl overflow-hidden hover:scale-105 transition shadow-lg shadow-indigo-500/20">
+                <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAARkklEQVR42u2deYwcV53HP79XR3fP5Z4Zn4mP2DnIYQebOOCs1zmwgCRO4nCMErxBKyAx8MeKPbTARgujIRK7C1rtESRYbyy0ApxE3rDJEscsi0kIZiFEDs6Bg6zYMXFCzvExV3d1Vb3f/lFdPYfHnqunx076SS1ZnurX9b7f3/1+r0oYx+jsVAPQ1SUWoOPT2ua5wTqr0TUgK8Gei9U8oo0gwtt6qKLSj5FjYA6A7jXiPhpGmZ9v3ypHRsPrVGNMsDo61Nm+XWKAWzf3v8+I8ynV+DpjvEXGeFiNUBuhGqNqeScMEYOIgxgXIy7WhlgbHhbjPGJt/J37tjQ+MRK7SRCgQidCl9hNm3tXKM5dIrLR9bJEYUAcF1VErCoigrz9Jf9ETVBFRVBVNY6TFc/LEIZFgAdDjb6yfUvzs3SqoQsF0dFmMSc3OaJ0if345r47Md6vXS+30dqSloo9kY0DFTEC4oiIeeeBn+hBee2OiBEbBxoUeyJrS+q42Zs94/3645v77qRLLIimZmlMDejsVNPVJbZj85FZLtnv+ZncDUGxDzSOEeNQH+NQDhsjjpPJNlEKCg9HFG/bvqXteIrtSQlIL7j106/NM07LDtfPXRYUj0ci4rwzpXyqJkrjTHaWG5UKe2zcs+G+rfNfH0mCjLT5Ha8ebfbI7krA7wlFxKuDOSUawky2xYtKhT2Syb3/+230DfUJJgW/owNDl1hH3W1upg5+FT2FFxR7QjeTuywq9t5Ll9iODgyoVAjo6MBs3y7xLbcfuTOTbb4+KNTBrzoJhZ4wm22+/pbbj9y5fbvECQkgSayKveXT3Rc6buNeVeuoRqZu86tvjERcK2LiOOpfef/W9t91diLm4osTe6S4X3fcrK82pA7+9OiB2hDHzfqK+3UQ3bevDPSm249dhpt50sahniw3qI+qDWscT4iCy7fdk99jACzyWdfLyjumljCzlsi6XlYs8lkA2fS5Y61xaH7rOP4CawOtm5/pZ8CYjMRx6VXHs5eYOLRXum52QRzXwa+VL4jjQF03uyAO7ZUGcdYb46kIdfNTMwqwxniKOOuNwEqrkahSl/6aGSHEaiQCKw0qy6wNSUrK9VEjDRBrQ1BZZhTNo7Ye+9eaArUomjcCDfXoc0aiUQQaDFKX/BlUBKlnvTM8zOkrHNXxSnKa71a7pxvgAigQRYCAY0B18nPGNpnQdQfnVp38nG8rAkTASAJKGEGppMRxAla+xWAVikXFTFJP4xiyWUEEjh+3RDE4Dvie4LnJ79sZJsOdMdOiEIQJ6I4DbXnDectdLjzfYeliw5LFDgdejPnaPw2Qy0kFpLHMydDrghJ86TNZzlnkcOilmIO/t/zuhZiDv485ctQSx+D7QsZLtG0mNMOttbSHUSLVjgNnzTesWuGx6lKX85Y6tDQPR3f1SpeVKzz2PB2SzQhRpFibSO1IsCGZ3xjwPKFQVC5f5bFqRbLE1rzLqkuT63p6lQOHYp56JuKpZyJefS3RjlxW8DywtnZEuLUCP46ht6C05g3rrvBYt8bjwvMcMpnh0mu1bKs1MRc3fsjj2X0R7a1CQ4OhqVHI5YSsL7jlu48iKJaUQkHp61f6B5S4O/luaoqkbOqMQEuzsGqFy6oVLrd9DH73QszuJ0Ke2BNx9JilsUEwpjYkyK139GgtwM/lhJuu9Vm3xmVO+6BRt/bU0YpV6O62NDcJmYyMywQVA6W3T5nTbka9fqipGepf3uy2PP7LiP/eGVAMEgGYbhLcWkh/MVD+/LM5rljtngD6WA7WCMyZbUYF72T+JZcVclkZV2g6dL457YaP3uAzd7bwjW8WaGkS4mkmYFrzAMdAX59y1RUeV6x2iaJkscYkn/HG50NBSkkb7TMaqOPyTeXvqybmbN0ajytWe/T2Tz4Cm3ECRCCMoaVF+MQt2YpNn0xSNNFkarLJlwiYstn55KYMzU1S8R9nHAFGYGBA+eiNGea0S+Jcz4CqkynnBvPnGj52Y4b+AcWcaQSIQLEE5yx2uH69XzE7Z0x9ppwTXLfeY/FCh6A0fcJjpmsBpZLy0Rt8fD9ZzJlUcpUyAZmMcPN1PsVg+nyBmQ7wC0XlgnMd1q3xzjjpH0nC1Wtdzl/qUChOjxaY6bjxMIIbPujjOINZ65lIgNUkq755g08YTo8vMNW+6WIASxY5/NHlifQ7Z/COQ1qJXbPa45xFDsWg+lpQVXiMgaCkrF/n4ftnrvSPzMR9D9Zf6RGUqq8FVSUgiqA1b7jyCq/iD870ka5h3RqP1rwQxacpAcZAoaCsXO7Q1ipY+/bosxBJSidtrcJ7LnUpFKobEVXXB5hEUt6uY+17vdPTB4hAKYR5cwzLL3Iq/zcZexvbwVpOPMW6vI4y32T8UrqW5Rc5zJ9nKIXV0+6qERAEyvKLXHLZyZkfq4m9dcxgLSf992RAS0sfI+czMliNnagZymWFS97lEgRaNQKqWo5euTyRfp2EpBqBA4csj+4u8YdXLY4rXLDMYf1VHm15qRA0ETKPHFN2/Sxk/8GYOFLOWmC4Zq3HuUudJDufAIjpmlaucPjJz6qHWVUIiGOY1SxceJ4z4ejH2sSB/2BHiW3/GRCUFNdNSPnlkyE7flLi83dkWXWpOy4S0muefi7in/+tyJvdNumIEHhyL/xoV8imj2X4yAa/8tsTiYbedZ5Dc7MQRdUxQ1M2QWKgFCpnn2WY3W7QCdj/FIBdj4ds/V4R34NZLUJDTmhsEFpnCX19yj/cXeDQS7ZSqRwL/Jdetvz9vxbo7VNaZyVzNeSEWS2C78M93y3yv4+FGDN+c5SuaU674ewFhlKopwcBphz/L1vsJPUTOwGzY6CvX9n2QEBjo1S2L61NPslGeVJb+t72YgLEOOzEtgcC+geUXDaZI50vjpPvNzUJ9/5XQE+vTmjvN/Vt5y5xiKLq5DlVC0OXnTMx+59K8m+ejXiz2+K7o0t3FENDTti3P+a1N2ylSHYyQt94y/Ls8xGNDaMnTVbBd+GtbsvTz0XD7mW8fmDpkuo9MmPKBCSpurDwbDO2hI4yDr1kx5RAY2CgoLz8B1sBezQCAF7+g2VgHMmSKhw6bJmI1KRrW7zQ4HtSlVLLlAhITUZjgzC33OkwXruYXjbekC7drx1rBMH47Hqau0xEatL7bGsVcrmJh7PTogGxheZmoTltqprARjtAPm/G1ABV8FyhNT/25K15wXVlXHO2t8qENCBdW77FMKvFVGW/eMoaYOMk0vDcie18VbLLC53ku6e4LopgdpuweKGpRF4nm2/JIsPstlOHiUrSkjjRrD29zPOS5q44nvrBuupoQJOc1Dafyq6rJnH1pZe49PZppdNtWKLiJJHSB6/xB7PsMbLVD1zl0devuKP4SteF3j5l1YqkHXKiO3ap2cm3SNJ5PaMaUAY9NT86SS3a/KdZ5rQbjvfosD4dgDe7lTWrXW66duzNfSmTuvH6DGsuc3nriFbITvuGjvcoc2cbbr8tw1R8aFOjVKVrbsoaoOUNi8maMFU4a57hq19qYPW7XcIwkfi+/oSMjdf5fPHPcqNqx0lNhAtf/HwDH97gYwz0l+cLQ1i1wuWrX2pg/lwDk2iVSTFvyFWn2aAqpQjXnfxtpCScvcDwlb9u4MWXLIdfifFcYekSkwBVJno8YFU6Gny44xNZNl7rc+CQJYyUhWc5LFsysflONjKZ6lTjqkLAVDPCocnV0sWGpYvNCdnnRDvj0hL03DmGuXPMcAmuQpNYtTZlqkKAV4U9mBQQq4N6Pp7m3VPNJyMPXZTPKJxOTUpVIcBW8ZhxtQGarkN6cZX2hquiSAOFyYUDWg5j7QycE7e2vFs2ye9XsuiZ1ID0xMlAYXIRgTC8byi2yXzTtZmfmqOhYe5k5ykUT5NyNAJhuTY+XklOpe7Y8aQU/fRvkyJPun1Y2b+twp5wRdJ1uE95+rmIbQ8EHC8fEBrvz2g5KAiKE6tiTI8GKGR84cCLMYcOW85ZlNR1dIzISDUh7vArlp27SvzHfcryixyu+WOP1e92mT/P4MiJJkPHqJ0N/bsxJ9r/196w7Nkb8dgvQp7ZFzN/ruHSi11amp0x61jp2TXXTaqo+w/EZDNTT8amfEZMBMIwSX5u+XCGjdf54wofyxxQKsHOXSUe/nGJg7+PaW81XHSBw/KLXC6+wGHR2eaE05PjHT29yuFXLPv2xzz3fMTz+2O6j1qWLna46Vqfa98/pHtbxjZbAA/tLHH/gwGlMElAZ5yAoXWY/gHlPStcPrkpwzmLnTGJGLrwUghP/ibiBz8M2H8gRkxSAc3nhXlzDAvmGubNFWa3GZqbkjNgTvn0e3r0tbdPeeuI5fU3lNfesLz2huXYcSWMFLVwwXkOH7nB5/KVSevkqRKykcAfeinmO9sCnno2quopyqqdkkzta3+/ks0KH7jK5+YNPm3lEvLJHGxqp52yFfibuwZ44cWYbDYJ9aIYolCJ4kFHbxwwRoadCbNWsTGVPWnXAdcTXCeZu1CE85c5/N3fNlTCyNHOqaVHZdPg4Ogx5cGdJX78aIliUWlslKqeI65aW4pqsqiGhuQGH3wkYPcTIRuv8/nA1T4NuSE5gwz6CBkS9z+0s8Qz+6KkBzMarIZ6TvIQCRlivkYCIEMe+aUjpDiKIJuBZ34b8cP/KXHjh3xGvnIiTQCNAUegUIAfP1bioR+VeOstS2Oj0NAgVYv/q64BI4fjJPa9GCgLzzJcs9bn/es82ttkWNiZJl9Hjyt/9eV+Bgo6Ledzh+7e/eNdjeRbBrcUh4bC3UeUn+4OeewXJQ6/Yslmkk6KagM/7QRUzFL5mQ3FQGlvM6x9r8vVaz3OXza8WP+NbxbY/URIc6NUiKm6UBjo6VOuXuvxl5/LDfvbCwdjHvu/kN2/iug+mgCf8af/YR7TflJ+qH8IwySByWSEc5cY3vNuj3Xvc9m3P+ZfthRobpJpz4qNgd5+5S8+k+PC8x1+/quIp54JOXjIUgy05s+LqAkBIzXClh8nUCpBfpag5WSpVu3s6ckdMUky6PuQzUjl3mr5xJSaPq5GlcrR/1xGaMhR2btNnxtUi2FM+T6iQQGwQ+7tjKuGTqoYpsCQrgKtsSBIOfOdLuda02pofdQJOIMJUNU6DDM0VNUoDNQfH1r7IWJQGDCCHEtazeqaUNMwQAyCHDOIHjTGQ5U6AbWDX43xQPSgUdhrxFWROgE1TEjViKsKew0a77I2FNV6RFRDDTDWhoLGu4zjmcejqPCq42QE6q8xqUUO6jgZiaLCq45nHjfbvpU/KoYdnp+h/hqrmoi/9fwMYtix7Vv5owbAWP12GBaVejxak/gzDItqrH4bwHR0qLPtnvyeKAx2eH6zQW1cR2m6pN/Gnt9sojDYse2e/J6ODnXK75JUEaIvxFGxJMar5wTTZHvEeMRRsSREXwCViy+m/PryDsz9W2c/H8eFLj/T4KgS1QGreuQT+ZkGJ44LXfdvnf18Rwemq0tsWgyWyjuF7+jZUX+ncLXB1zCTa/GCYu8j9/97y4b0FcIgesIrzf/kCE0aFH5af6V5FcEf+5XmAKKdwPfvlh4bxxuiUmFPJtviqdqo7hMmCb3aKAXfxj0bvn+39HSWsU6vGhZ2dnWJ7exUc9/W5tdDiuvDUuHhbG6WC0bq0dHEoh0wks3NcsNS4eGQ4vr7ts5/vbMz8bnDotLRvj/0wo9v7rtTjPtlx8lkw1KPosSAU3//2ChuVokRHM9vkTgOimqju+7d0vS1kZiOSUDFJyR9frppc+8KxblLRDa6XpYoDIjjooqIVU2b0t5phKiqoiKoqhrHyYrrZYjCIqr6kBB/eduW5mfpVDPU5k+AgGQkHltigFs397/PiPMp1eh6Y/yFxnhYjVAboRq/YyoZIgYRBzEuRlysLWFt+DKYnYpuvW9L4xMjsTvpXOP5wc5ONamPALj5E8fbczl3naJXg6wEey5W84g2vv01QRWVfowcA3MAdK8R99GBgWD3g9+d1T0aXqca/w/ev0QuLCStAAAAAABJRU5ErkJggg==" alt="Discord" class="w-full h-full block">
+            </a>
+
+            <!-- Stats Modal Toggle -->
+            <button id="statsModalBtn" class="p-2.5 rounded-xl glass-panel text-slate-300 hover:text-white hover:bg-slate-800 transition" title="Sinnes-Profil & Stats">
+                <span class="text-sm text-cyan-400">📊</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- VIEW 1: HUB / LANDING PAGE -->
+    <main id="hubView" class="w-full max-w-4xl flex flex-col gap-6 my-auto">
+        
+        <!-- Welcome Hero Banner -->
+        <div class="glass-panel p-6 sm:p-8 rounded-3xl border border-purple-500/20 bg-gradient-to-r from-slate-950 via-slate-900 to-purple-950/40 relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div class="max-w-xl relative z-10">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="text-xs font-mono font-bold uppercase tracking-widest text-purple-400 bg-purple-500/10 px-3 py-1 rounded-full border border-purple-500/20">Official Nexus Collection</span>
+                    <span id="proModeBadge" class="hidden text-xs font-mono font-bold uppercase tracking-widest text-rose-400 bg-rose-500/10 px-3 py-1 rounded-full border border-rose-500/30">🔥 PRO ACTIVE</span>
+                </div>
+                <h2 class="text-2xl sm:text-3xl font-bold text-white font-mono mb-2">Solo, 1v1 oder Koop Mittelwert?</h2>
+                <p class="text-xs sm:text-sm text-slate-300 leading-relaxed mb-4">
+                    Im <b>Koop-Modus</b> stellen jetzt beide Spieler nacheinander ihren Wert ein. Das System berechnet exakt den <b>Mittelwert (Average)</b> eurer zwei Eingaben für die Team-Punktzahl!
+                </p>
+                <div class="flex flex-wrap items-center gap-4 text-xs font-mono text-slate-400">
+                    <span class="flex items-center gap-1.5"><span class="text-cyan-400">🎯</span> 20 Disziplinen</span>
+                    <span class="flex items-center gap-1.5"><span class="text-amber-400">🧮</span> Koop-Mittelwert System</span>
+                    <span class="flex items-center gap-1.5"><span class="text-purple-400">🧠</span> Live-Skill-Radar</span>
+                </div>
+            </div>
+
+            <!-- Daily Challenge Special Button -->
+            <button id="dailyChallengeBtn" class="w-full md:w-auto px-6 py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-rose-500 to-purple-600 hover:opacity-95 text-white font-mono font-bold text-xs tracking-wider shadow-lg shadow-purple-500/20 flex items-center justify-center gap-3 shrink-0 transition transform hover:scale-105 active:scale-95 border border-white/20">
+                <span class="text-xl text-amber-200">📅</span>
+                <div class="text-left">
+                    <div class="text-[10px] text-amber-200 uppercase font-mono">Tages-Challenge</div>
+                    <div class="text-sm font-black text-white">SENSORY IQ TEST</div>
+                </div>
+            </button>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-1 border-b border-slate-800">
+            <button data-filter="all" class="hub-tab-btn active px-4 py-2 rounded-xl text-xs font-mono font-semibold transition bg-purple-600 text-white shadow">
+                Alle Spiele (14)
+            </button>
+            <button data-filter="duo" class="hub-tab-btn px-4 py-2 rounded-xl text-xs font-mono font-semibold text-slate-400 hover:text-white transition">
+                ⚡ Koop & 1v1 Special (3)
+            </button>
+            <button data-filter="dialed" class="hub-tab-btn px-4 py-2 rounded-xl text-xs font-mono font-semibold text-slate-400 hover:text-white transition">
+                Dialed.gg Classics (4)
+            </button>
+            <button data-filter="nexus" class="hub-tab-btn px-4 py-2 rounded-xl text-xs font-mono font-semibold text-slate-400 hover:text-white transition">
+                Nexus Lab Originals (7)
+            </button>
+            <button data-filter="arcade" class="hub-tab-btn px-4 py-2 rounded-xl text-xs font-mono font-semibold text-slate-400 hover:text-white transition">
+                🕹️ Arcade (4)
+            </button>
+        </div>
+
+        <!-- Game Cards Grid -->
+        <div id="gamesGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- Dynamic Game Cards Injected via JavaScript -->
+        </div>
+    </main>
+
+    <!-- VIEW 2: GAME ARENA -->
+    <main id="arenaView" class="w-full max-w-2xl my-auto flex-col items-center hidden">
+        
+        <!-- Navigation Bar inside game -->
+        <div class="w-full flex items-center justify-between mb-3">
+            <button id="backToHubBtn" class="text-xs font-mono text-slate-400 hover:text-white transition flex items-center gap-2 glass-panel px-3 py-1.5 rounded-xl border border-slate-800">
+                <span class="">←</span> Hub / Übersicht
+            </button>
+            <span id="gameTitleBadge" class="text-xs font-mono text-purple-400 font-bold px-3 py-1.5 rounded-xl glass-panel border border-purple-500/30">
+                COLOR RECALL
+            </span>
+        </div>
+
+        <!-- Round & Score Bar -->
+        <div class="w-full glass-panel rounded-2xl p-4 mb-4 flex items-center justify-between border border-slate-800">
+            <div class="flex flex-col">
+                <span class="text-[10px] uppercase font-mono tracking-wider text-slate-400">Runde</span>
+                <span id="roundDisplay" class="text-lg font-bold font-mono text-purple-400">1 / 5</span>
+            </div>
+            <div class="flex gap-1.5" id="roundDots">
+                <!-- Round indicator dots generated via JS -->
+            </div>
+            <div class="flex flex-col items-end" id="scoreBoardContainer">
+                <span id="scoreBoardLabel" class="text-[10px] uppercase font-mono tracking-wider text-slate-400">Gesamtpunkte</span>
+                <span id="totalScoreDisplay" class="text-lg font-bold font-mono text-emerald-400">0.00 <span class="text-xs text-slate-500">/ 50</span></span>
+            </div>
+        </div>
+
+        <!-- Stage Container -->
+        <div id="gameContainer" class="w-full glass-panel rounded-3xl p-6 sm:p-8 flex flex-col items-center justify-center relative min-h-[440px] shadow-2xl border border-slate-800/80 overflow-hidden">
+
+            <!-- Reveal Phase -->
+            <div id="stageReveal" class="w-full flex flex-col items-center justify-center gap-4 transition-all duration-300">
+                <div id="revealSubtitle" class="text-xs font-mono uppercase tracking-widest text-purple-400">Einprägen...</div>
+
+                <!-- Visual Canvas Frame -->
+                <div id="visualFrame" class="w-64 h-64 sm:w-72 sm:h-72 rounded-3xl border-2 border-slate-700/60 bg-slate-950/60 shadow-2xl flex items-center justify-center relative overflow-hidden radar-grid">
+                    <canvas id="gameCanvas" class="w-full h-full block cursor-pointer"></canvas>
+                </div>
+
+                <!-- Reveal Countdown Bar -->
+                <div class="w-full max-w-xs bg-slate-800/60 h-2 rounded-full overflow-hidden mt-1">
+                    <div id="revealTimerBar" class="bg-purple-500 h-full w-full transition-all duration-75"></div>
+                </div>
+                <div id="revealHint" class="text-xs text-slate-400 text-center font-mono">Präge dir den Reiz exakt ein!</div>
+            </div>
+
+            <!-- Recall Phase -->
+            <div id="stageRecall" class="w-full flex flex-col items-center gap-5 hidden transition-all duration-300">
+                <div id="playerTurnBanner" class="w-full text-center py-2 px-4 rounded-xl font-mono text-xs font-bold uppercase tracking-widest bg-purple-500/10 text-purple-300 border border-purple-500/30 flex items-center justify-center gap-2">
+                    <span class="">🧠</span> <span id="playerTurnText">Aus dem Gedächtnis nachbauen</span>
+                </div>
+
+                <!-- Recall Frame -->
+                <div id="recallFrame" class="w-64 h-64 sm:w-72 sm:h-72 rounded-3xl border-2 border-purple-500/40 bg-slate-950/80 shadow-2xl flex items-center justify-center relative overflow-hidden radar-grid">
+                    <canvas id="recallCanvas" class="w-full h-full block cursor-pointer"></canvas>
+                </div>
+
+                <!-- Controls Panel -->
+                <div id="controlsContainer" class="w-full max-w-md flex flex-col gap-3 min-h-[90px] justify-center">
+                    <!-- Dynamic controls rendered via JS -->
+                </div>
+
+                <!-- Confirm Guess Button -->
+                <button id="submitGuessBtn" class="w-full max-w-md py-3.5 rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-500 text-white font-bold text-sm tracking-wide shadow-lg shadow-purple-500/20 hover:opacity-95 active:scale-[0.98] transition flex items-center justify-center gap-2">
+                    <span class="">✅</span> <span id="submitGuessBtnText">Bestätigen & Werten</span>
+                </button>
+            </div>
+
+            <!-- Result Phase -->
+            <div id="stageResult" class="w-full flex flex-col items-center justify-center gap-4 hidden transition-all duration-300">
+                <div class="text-xs font-mono uppercase tracking-widest text-slate-400" id="resultPhaseTitle">Rundenergebnis</div>
+                
+                <div id="roundScoreBadge" class="text-4xl sm:text-5xl font-black font-mono text-emerald-400 my-1">
+                    +9.85 <span class="text-lg text-slate-400">/ 10</span>
+                </div>
+
+                <!-- Comparison Container -->
+                <div id="comparisonContainer" class="grid grid-cols-2 gap-3 w-full max-w-md my-2">
+                    <!-- Target vs Guess side-by-side comparison boxes -->
+                </div>
+
+                <button id="nextRoundBtn" class="w-full max-w-xs py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-sm transition shadow-lg flex items-center justify-center gap-2">
+                    <span>Nächste Runde</span> <span class="">→</span>
+                </button>
+            </div>
+
+            <!-- Start Overlay -->
+            <div id="startOverlay" class="absolute inset-0 glass-panel bg-slate-950/95 backdrop-blur-md z-20 flex flex-col items-center justify-center p-6 text-center">
+                <div id="modeIconBadge" class="w-20 h-20 rounded-3xl bg-purple-500/10 border border-purple-500/30 text-purple-400 text-3xl flex items-center justify-center mb-4 shadow-2xl">
+                    <span class="">🎨</span>
+                </div>
+                <h2 id="modeTitle" class="text-2xl font-bold text-white mb-1 font-mono">Color Recall</h2>
+                
+                <div class="flex items-center gap-2 my-3 p-1 rounded-xl bg-slate-900 border border-slate-800">
+                    <button data-overlay-mode="solo" class="overlay-mode-btn text-xs font-mono px-3 py-1.5 rounded-lg text-white bg-purple-600">👤 Solo</button>
+                    <button data-overlay-mode="duel" class="overlay-mode-btn text-xs font-mono px-3 py-1.5 rounded-lg text-slate-400 hover:text-white">⚔️ 1v1 Duell</button>
+                    <button data-overlay-mode="coop" class="overlay-mode-btn text-xs font-mono px-3 py-1.5 rounded-lg text-slate-400 hover:text-white" title="Beide stellen ein, Mittelwert entscheidet">🤝 Koop (Mittelwert)</button>
+                </div>
+
+                <p id="modeDescription" class="text-xs sm:text-sm text-slate-300 max-w-sm mb-6 leading-relaxed">
+                    Präge dir den Farbton ein und rekonstruiere ihn mit HSL-Reglern!
+                </p>
+                <button id="startGameBtn" class="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-sm tracking-wide shadow-lg shadow-purple-500/30 hover:scale-105 active:scale-95 transition flex items-center justify-center gap-2">
+                    <span class="">▶</span> SPIEL STARTEN (5 RUNDEN)
+                </button>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Summary Modal -->
+    <div id="summaryModal" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="glass-panel bg-slate-900 border border-purple-500/30 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl flex flex-col items-center text-center relative overflow-hidden">
+            <div class="w-16 h-16 rounded-2xl bg-purple-500/20 text-purple-400 flex items-center justify-center text-3xl mb-3 border border-purple-500/30">
+                ⚡
+            </div>
+            <span class="text-xs uppercase font-mono tracking-widest text-purple-400">Sensory Endergebnis</span>
+            <h3 id="summaryScoreDisplay" class="text-4xl font-black font-mono text-white my-2">44.15 <span class="text-lg text-slate-400">/ 50</span></h3>
+            <p id="summaryRankTitle" class="text-sm font-semibold text-cyan-400 mb-4">Quanten-Gehirn 🧠⚡</p>
+
+            <div class="w-full bg-slate-950/80 rounded-2xl p-4 mb-6 flex flex-col gap-2 text-xs font-mono text-slate-300 border border-slate-800 max-h-48 overflow-y-auto" id="summaryRoundsList">
+                <!-- Round scores list -->
+            </div>
+
+            <div class="flex gap-3 w-full">
+                <button id="copyShareBtn" class="flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition border border-slate-700 flex items-center justify-center gap-2">
+                    <span class="">🔗</span> Teilen
+                </button>
+                <button id="playAgainBtn" class="flex-1 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition shadow-lg flex items-center justify-center gap-2">
+                    <span class="">🔄</span> Nochmal
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats & Sensory Radar Modal -->
+    <div id="statsModal" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="glass-panel bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-xl w-full shadow-2xl flex flex-col items-center text-center max-h-[90vh] overflow-y-auto">
+            <h3 class="text-xl font-bold font-mono text-white mb-1">Dein Sinnes-Profil & Stats</h3>
+            <p class="text-xs text-slate-400 mb-4 font-mono">Analyse aller 20 Wahrnehmungs-Disziplinen</p>
+
+            <!-- Spider/Radar Skill Chart Canvas -->
+            <div class="w-64 h-64 relative mb-4">
+                <canvas id="radarChartCanvas" class="w-full h-full block"></canvas>
+            </div>
+
+            <div id="statsList" class="w-full flex flex-col gap-2 mb-6 max-h-[220px] overflow-y-auto pr-1">
+                <!-- Injected via JS -->
+            </div>
+            <button id="closeStatsBtn" class="w-full py-2.5 rounded-xl bg-slate-800 text-white font-bold text-xs hover:bg-slate-700 transition">Schließen</button>
+        </div>
+    </div>
+
+    <footer class="text-[11px] text-slate-500 text-center my-3 font-mono">
+        DIALED NEXUS - Sensory Perception Suite & Streamer Edition (Koop Mittelwert Update)
+    </footer>
+
+    <div id="arcadeView" style="display:none;touch-action:none" class="fixed inset-0 z-50 flex-col items-center bg-[#05070d]/95 p-3 gap-2">
+    <div class="w-full max-w-md flex items-center justify-between font-mono text-xs text-slate-300">
+        <span id="arTitle" class="font-bold text-white"></span>
+        <span>Score <b id="arScore" class="text-emerald-400">0</b> · Best <b id="arBest" class="text-amber-300">0</b></span>
+        <button id="arClose" class="px-3 py-1.5 rounded-lg glass-panel hover:bg-slate-800">✕ Zurück</button>
+    </div>
+    <canvas id="arCanvas" width="360" height="480" style="max-width:100%;max-height:calc(100vh - 110px);aspect-ratio:3/4;background:#0b1020;border:1px solid #334155;border-radius:16px;touch-action:none"></canvas>
+</div>
+<div id="atomView" style="display:none" class="fixed inset-0 z-50 bg-[#05070d]">
+    <canvas id="atomCanvas" class="absolute inset-0 w-full h-full" style="touch-action:none;cursor:crosshair"></canvas>
+    <div class="absolute top-3 left-3 right-3 flex items-center justify-between font-mono text-xs text-slate-300 pointer-events-none">
+        <span class="font-bold text-white">⚛️ ATOM LAB</span>
+        <span class="hidden sm:inline text-slate-500">Atom greifen &amp; werfen · Leere Fläche halten = Wirbel · Klick = neues Atom</span>
+        <button id="atomClose" class="pointer-events-auto px-3 py-1.5 rounded-lg glass-panel hover:bg-slate-800">✕ Zurück</button>
+    </div>
+    <div class="absolute bottom-3 left-2 right-2 flex flex-col items-center gap-2 font-mono text-xs text-slate-300">
+        <div class="flex flex-wrap justify-center gap-2">
+            <button id="atomModegas" class="px-3 py-2 rounded-xl glass-panel text-slate-200 hover:bg-slate-800">🌫️ Gas</button>
+            <button id="atomModenet" class="px-3 py-2 rounded-xl glass-panel text-slate-200 hover:bg-slate-800">🕸️ Netz</button>
+            <button id="atomModecrystal" class="px-3 py-2 rounded-xl glass-panel text-slate-200 hover:bg-slate-800">💎 Kristall</button>
+            <button id="atomGrav" class="px-3 py-2 rounded-xl glass-panel text-slate-200 hover:bg-slate-800">🌍 Schwerkraft aus</button>
+            <button id="atomBondBtn" class="px-3 py-2 rounded-xl glass-panel text-slate-200 hover:bg-slate-800">🔗 Bindungen an</button>
+            <button id="atomReset" class="px-3 py-2 rounded-xl glass-panel text-slate-200 hover:bg-slate-800">🔄 Reset</button>
+        </div>
+        <div class="flex flex-wrap justify-center items-center gap-x-5 gap-y-1 glass-panel rounded-xl px-4 py-2">
+            <label class="flex items-center gap-2">Atome <input id="atomCount" type="range" min="10" max="300" value="90" class="w-24"><b id="atomCountV" class="w-7 text-white">90</b></label>
+            <label class="flex items-center gap-2">Tempo <input id="atomSpeed" type="range" min="0" max="3" step="0.1" value="1" class="w-24"><b id="atomSpeedV" class="w-9 text-white">1.0×</b></label>
+            <label class="flex items-center gap-2">Kraft <input id="atomForce" type="range" min="0.2" max="3" step="0.1" value="1" class="w-24"><b id="atomForceV" class="w-9 text-white">1.0×</b></label>
+        </div>
+    </div>
+</div>
+<div id="tuneView" style="display:none" class="fixed inset-0 z-50 bg-[#05070d] overflow-y-auto">
+    <div class="max-w-md mx-auto p-4 flex flex-col gap-3 font-mono text-sm text-slate-200">
+        <div class="flex items-center justify-between">
+            <span class="font-bold text-white">🎵 TUNE TRAIL</span>
+            <button id="tuneClose" class="px-3 py-1.5 rounded-lg glass-panel hover:bg-slate-800 text-xs">✕ Zurück</button>
+        </div>
+        <div id="tuneStats" class="text-xs text-slate-400"></div>
+        <div id="tuneSegs" class="flex gap-1"></div>
+        <button id="tunePlay" class="py-5 rounded-2xl bg-rose-500/20 border border-rose-500/40 text-rose-200 text-base font-bold"></button>
+        <div class="h-1.5 rounded bg-slate-800 overflow-hidden"><div id="tuneBar" class="h-full bg-rose-400" style="width:0"></div></div>
+        <div id="tuneHist" class="flex flex-col gap-1.5 text-xs"></div>
+        <div id="tuneGuessBox" class="flex flex-col gap-2">
+            <input id="tuneInput" autocomplete="off" placeholder="Songtitel eingeben…" class="px-3 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white outline-none focus:border-rose-400">
+            <div id="tuneSug" class="flex flex-col gap-1 max-h-48 overflow-y-auto"></div>
+            <button id="tuneSkip" class="py-2.5 rounded-xl glass-panel text-slate-300 hover:bg-slate-800 text-xs">⏭ Überspringen (+ längerer Ausschnitt)</button>
+        </div>
+        <div id="tuneMsg" class="text-center text-base text-white"></div>
+        <button id="tuneNext" style="display:none" class="py-3 rounded-xl bg-purple-500/30 border border-purple-400/40 text-purple-100 font-bold">Nächster Song →</button>
+    </div>
+</div>
+<script>
+        // --- Web Audio API Engine ---
+        class NexusAudio {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            playFreq(freq, type = 'sine', duration = 0.5) {
+                if (!this.enabled) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration);
+            }
+
+            playChord(f1, f2, duration = 0.6) {
+                if (!this.enabled) return;
+                this.playFreq(f1, 'sine', duration);
+                this.playFreq(f2, 'triangle', duration);
+            }
+
+            playClick(pitch = 800) {
+                if (!this.enabled) return;
+                this.playFreq(pitch, 'triangle', 0.05);
+            }
+
+            clickAt(off, pitch = 1500) {
+                if (!this.enabled) return;
+                this.init();
+                const t0 = this.ctx.currentTime + off;
+                const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+                o.type = 'square'; o.frequency.value = pitch;
+                g.gain.setValueAtTime(0.0001, t0);
+                g.gain.exponentialRampToValueAtTime(0.25, t0 + 0.002);
+                g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.03);
+                o.connect(g); g.connect(this.ctx.destination);
+                o.start(t0); o.stop(t0 + 0.04);
+            }
+
+            clickPair(gapMs, off) { this.clickAt(off); this.clickAt(off + gapMs / 1000); }
+
+            playSuccess() {
+                if (!this.enabled) return;
+                this.playFreq(523.25, 'sine', 0.15); // C5
+                setTimeout(() => this.playFreq(659.25, 'sine', 0.15), 100); // E5
+                setTimeout(() => this.playFreq(783.99, 'sine', 0.3), 200); // G5
+            }
+        }
+
+        const audio = new NexusAudio();
+
+        // --- All 14 Perception Game Definitions ---
+        const MODES = {
+            harmony: {
+                id: 'harmony',
+                name: 'HARMONY (Duo-Akkord)',
+                category: 'duo',
+                axis: 'Auditiv',
+                icon: '🎵',
+                color: 'purple',
+                desc: 'Speziell für Koop & 1v1: Höre ein doppeltes Klang-Intervall (2 Frequenzen) und stimme den Zielakkord ab.'
+            },
+            split_radar: {
+                id: 'split_radar',
+                name: 'SPLIT RADAR (Duo-Koordinate)',
+                category: 'duo',
+                axis: 'Räumlich',
+                icon: '📍',
+                color: 'cyan',
+                desc: 'Zwei Fadenkreuze blitzen auf. Im Koop ergibt der Mittelwert eurer Klicks den Team-Vektor!'
+            },
+            duo_balance: {
+                id: 'duo_balance',
+                name: 'BALANCE (Duo-Kraft/Waage)',
+                category: 'duo',
+                axis: 'Kognitiv',
+                icon: '⚖️',
+                color: 'amber',
+                desc: 'Finde die exakte Balance! Beide Spieler peilen ihren Teil an – der Mittelwert bildet das Gewicht.'
+            },
+            color: {
+                id: 'color',
+                name: 'COLOR (Farbe)',
+                category: 'dialed',
+                axis: 'Visuell',
+                icon: '🎨',
+                color: 'purple',
+                desc: 'Präge dir Farbtöne (HSL) genau ein und reklamiere sie aus dem Gedächtnis.'
+            },
+            sound: {
+                id: 'sound',
+                name: 'SOUND (Ton-Frequenz)',
+                category: 'dialed',
+                axis: 'Auditiv',
+                icon: '〰️',
+                color: 'cyan',
+                desc: 'Höre eine Ton-Frequenz (200-800 Hz) und finde den exakten Ton per Gehör.'
+            },
+            time: {
+                id: 'time',
+                name: 'TIME (Zeitdauer)',
+                category: 'dialed',
+                axis: 'Zeitgefühl',
+                icon: '⏱️',
+                color: 'amber',
+                desc: 'Spüre die gezeigte Zeitdauer und halte den Button exakt solange gedrückt.'
+            },
+            shape: {
+                id: 'shape',
+                name: 'SHAPE (Geometrie)',
+                category: 'dialed',
+                axis: 'Räumlich',
+                icon: '🔷',
+                color: 'rose',
+                desc: 'Merke dir Skalierung, Rotation und Ecken-Abrundung der Form.'
+            },
+            tempo: {
+                id: 'tempo',
+                name: 'TEMPO (BPM Beat)',
+                category: 'nexus',
+                axis: 'Auditiv',
+                icon: '🥁',
+                color: 'emerald',
+                desc: 'Höre den Rhythmus und tappe 4 Beats exakt im gleichen Tempo.'
+            },
+            vector: {
+                id: 'vector',
+                name: 'VECTOR (Raum-Radar)',
+                category: 'nexus',
+                axis: 'Räumlich',
+                icon: '🎯',
+                color: 'cyan',
+                desc: 'Ein Zielpunkt leuchtet kurz im Radar. Klicke blind exakt auf die Stelle.'
+            },
+            angle: {
+                id: 'angle',
+                name: 'ANGLE (Neigungswinkel)',
+                category: 'nexus',
+                axis: 'Räumlich',
+                icon: '🧭',
+                color: 'indigo',
+                desc: 'Erkenne die Gradzahl des Laserstrahls und passe den Zeiger an.'
+            },
+            velocity: {
+                id: 'velocity',
+                name: 'VELOCITY (Geschwindigkeit)',
+                category: 'nexus',
+                axis: 'Visuell',
+                icon: '🚀',
+                color: 'amber',
+                desc: 'Beobachte das Tempo des Partikels und rekonstruiere seine Fluggeschwindigkeit.'
+            },
+            quantity: {
+                id: 'quantity',
+                name: 'QUANTITY (Mengen-Dichte)',
+                category: 'nexus',
+                axis: 'Kognitiv',
+                icon: '🔢',
+                color: 'purple',
+                desc: 'Ein Partikelschwarm blitzt auf. Schätze die exakte Anzahl der Punkte.'
+            },
+            strobe: {
+                id: 'strobe',
+                name: 'STROBE (Blinkfrequenz)',
+                category: 'nexus',
+                axis: 'Visuell',
+                icon: '⚡',
+                color: 'rose',
+                desc: 'Erkenne das Stroboskop-Blinken und finde die Frequenz (Hz).'
+            },
+            grid: {
+                id: 'grid',
+                name: 'GRID (Matrix-Muster)',
+                category: 'nexus',
+                axis: 'Kognitiv',
+                icon: '🔲',
+                color: 'emerald',
+                desc: 'Ein 3x3 Felder-Muster leuchtet kurz auf. Klicke die aktiven Felder nach.'
+            },
+            echo_gap: { id: 'echo_gap', name: 'ECHO GAP (Micro-Delay)', category: 'nexus', axis: 'Auditiv', icon: '🎧', color: 'cyan',
+                desc: 'Zwei Audioklicks (60-500 ms Abstand). Stelle den Zeitabstand per Gehör nach.' },
+            micro_gap: { id: 'micro_gap', name: 'MICRO GAP (Spaltbreite)', category: 'nexus', axis: 'Visuell', icon: '📐', color: 'indigo',
+                desc: 'Zwei Flächen mit feinem Spalt. Merke dir die Breite und stelle sie pixelgenau ein.' },
+            spin: { id: 'spin', name: 'SPIN RPM (Drehzahl)', category: 'nexus', axis: 'Visuell', icon: '🔄', color: 'purple',
+                desc: 'Ein Rotor dreht sich. Erfasse die Drehzahl und stelle sie nach.' },
+            tunnel: { id: 'tunnel', name: 'TUNNEL (Blind-Timing)', category: 'nexus', axis: 'Zeitgefühl', icon: '🙈', color: 'amber',
+                desc: 'Der Ball gleitet in einen Tunnel. Drücke genau dann, wenn er blind wieder herauskommt.' },
+            chroma: { id: 'chroma', name: 'CHROMA FADE (Kontrast)', category: 'nexus', axis: 'Visuell', icon: '🌓', color: 'rose',
+                desc: 'Ein Kreis hebt sich nur minimal vom Hintergrund ab. Stelle die Kontraststärke nach.' },
+            duo_radar: { id: 'duo_radar', name: 'DUO RADAR (Dual-Sektor)', category: 'duo', axis: 'Räumlich', icon: '🎯', color: 'emerald',
+                desc: 'Zwei Laser-Vektoren (Winkel). Im Koop ergibt der Mittelwert eurer Winkel die Team-Richtung!' }
+        };
+
+        // --- Application State ---
+        const state = {
+            mode: 'color',
+            playMode: 'solo', // 'solo', 'duel', 'coop'
+            activePlayer: 1,
+            filter: 'all',
+            proMode: false,
+            round: 1,
+            maxRounds: 5,
+            totalScore: 0,
+            p1TotalScore: 0,
+            p2TotalScore: 0,
+            p1Wins: 0,
+            p2Wins: 0,
+            p1Guess: null,
+            p2Guess: null,
+            roundScores: [],
+            phase: 'idle', // 'idle', 'reveal', 'recall', 'result'
+            target: null,
+            guess: null,
+            timerInterval: null,
+            animFrame: null,
+            tapTimes: [],
+            timePressStart: 0,
+            gridSelected: [],
+            highScores: (() => { try { return JSON.parse(localStorage.getItem('dialed_nexus_hs_v5') || '{}'); } catch (e) { return {}; } })()
+        };
+
+        // DOM References
+        const hubView = document.getElementById('hubView');
+        const arenaView = document.getElementById('arenaView');
+        const gamesGrid = document.getElementById('gamesGrid');
+        const startOverlay = document.getElementById('startOverlay');
+        const stageReveal = document.getElementById('stageReveal');
+        const stageRecall = document.getElementById('stageRecall');
+        const stageResult = document.getElementById('stageResult');
+        const gameCanvas = document.getElementById('gameCanvas');
+        const recallCanvas = document.getElementById('recallCanvas');
+        const controlsContainer = document.getElementById('controlsContainer');
+        const revealTimerBar = document.getElementById('revealTimerBar');
+        const revealSubtitle = document.getElementById('revealSubtitle');
+        const roundDisplay = document.getElementById('roundDisplay');
+        const roundDots = document.getElementById('roundDots');
+        const totalScoreDisplay = document.getElementById('totalScoreDisplay');
+        const playerTurnBanner = document.getElementById('playerTurnBanner');
+        const playerTurnText = document.getElementById('playerTurnText');
+        const submitGuessBtn = document.getElementById('submitGuessBtn');
+        const submitGuessBtnText = document.getElementById('submitGuessBtnText');
+        const scoreBoardLabel = document.getElementById('scoreBoardLabel');
+        const comparisonContainer = document.getElementById('comparisonContainer');
+        const resultPhaseTitle = document.getElementById('resultPhaseTitle');
+        const summaryModal = document.getElementById('summaryModal');
+        const statsModal = document.getElementById('statsModal');
+        const proModeBtn = document.getElementById('proModeBtn');
+        const proModeIcon = document.getElementById('proModeIcon');
+        const proModeBadge = document.getElementById('proModeBadge');
+
+        // Header Playmode selectors
+        document.querySelectorAll('.mode-select-btn').forEach(btn => {
+            btn.addEventListener('click', () => setPlayMode(btn.dataset.mode));
+        });
+        document.querySelectorAll('.overlay-mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => setPlayMode(btn.dataset.overlayMode));
+        });
+
+        function setPlayMode(mode) {
+            state.playMode = mode;
+            document.querySelectorAll('.mode-select-btn').forEach(b => {
+                b.className = b.dataset.mode === mode 
+                    ? 'mode-select-btn px-2.5 py-1 rounded-lg text-white bg-purple-600 transition flex items-center gap-1'
+                    : 'mode-select-btn px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition flex items-center gap-1';
+            });
+            document.querySelectorAll('.overlay-mode-btn').forEach(b => {
+                b.className = b.dataset.overlayMode === mode 
+                    ? 'overlay-mode-btn text-xs font-mono px-3 py-1.5 rounded-lg text-white bg-purple-600'
+                    : 'overlay-mode-btn text-xs font-mono px-3 py-1.5 rounded-lg text-slate-400 hover:text-white';
+            });
+            updateRoundUI();
+        }
+
+        // Pro Mode
+        proModeBtn.addEventListener('click', () => {
+            state.proMode = !state.proMode;
+            proModeBtn.classList.toggle('pro-mode-active', state.proMode);
+            proModeIcon.style.color = state.proMode ? '#f43f5e' : '';
+            proModeBadge.classList.toggle('hidden', !state.proMode);
+            audio.playClick(state.proMode ? 900 : 400);
+        });
+
+        // Hub Tab Filtering
+        document.querySelectorAll('.hub-tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.hub-tab-btn').forEach(b => b.className = 'hub-tab-btn px-4 py-2 rounded-xl text-xs font-mono font-semibold text-slate-400 hover:text-white transition');
+                btn.className = 'hub-tab-btn active px-4 py-2 rounded-xl text-xs font-mono font-semibold transition bg-purple-600 text-white shadow';
+                state.filter = btn.dataset.filter;
+                renderHub();
+            });
+        });
+
+        document.getElementById('logoBtn').onclick = showHub;
+        document.getElementById('backToHubBtn').onclick = showHub;
+
+        function showHub() {
+            cancelAnimationFrame(state.animFrame);
+            clearInterval(state.timerInterval);
+            stopRecallAnim();
+            hubView.classList.remove('hidden');
+            arenaView.classList.add('hidden');
+            renderHub();
+        }
+
+        function renderHub() {
+            const cnt = { all: 0, duo: 0, dialed: 0, nexus: 0, arcade: 0 };
+            Object.values(MODES).forEach(m => { cnt.all++; cnt[m.category]++; });
+            cnt.arcade = Object.keys(ARCADE).length; cnt.all += cnt.arcade;
+            const tabNames = { all: 'Alle Spiele', duo: '⚡ Koop & 1v1 Special', dialed: 'Dialed.gg Classics', nexus: 'Nexus Lab Originals', arcade: '🕹️ Arcade' };
+            document.querySelectorAll('.hub-tab-btn').forEach(b => { b.textContent = `${tabNames[b.dataset.filter]} (${cnt[b.dataset.filter]})`; });
+            gamesGrid.innerHTML = '';
+            Object.values(MODES).forEach(m => {
+                if (state.filter === 'arcade') return;
+                if (state.filter === 'duo' && m.category !== 'duo') return;
+                if (state.filter === 'dialed' && m.category !== 'dialed') return;
+                if (state.filter === 'nexus' && m.category !== 'nexus') return;
+
+                const hs = state.highScores[m.id] ? state.highScores[m.id].toFixed(2) : '0.00';
+                const card = document.createElement('div');
+                card.className = 'glass-card p-5 rounded-2xl flex flex-col justify-between cursor-pointer group relative overflow-hidden';
+                card.onclick = () => launchGame(m.id);
+                
+                let badgeText = m.category === 'duo' ? '⚡ Koop/1v1 Special' : (m.category === 'dialed' ? 'Classic' : 'Nexus');
+                let badgeColor = m.category === 'duo' ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-slate-800 text-slate-400 border-slate-700';
+
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="w-10 h-10 rounded-xl bg-${m.color}-500/20 border border-${m.color}-500/30 text-${m.color}-400 flex items-center justify-center text-lg">
+                                ${m.icon}
+                            </div>
+                            <span class="text-[10px] font-mono uppercase px-2 py-0.5 rounded-md border ${badgeColor}">
+                                ${badgeText}
+                            </span>
+                        </div>
+                        <h3 class="font-mono font-bold text-base text-white mb-1 group-hover:text-purple-400 transition">${m.name}</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed mb-4">${m.desc}</p>
+                    </div>
+                    <div class="flex items-center justify-between pt-3 border-t border-slate-800 text-xs font-mono">
+                        <span class="text-slate-500">Best: <b class="text-emerald-400">${hs}</b>/50</span>
+                        <span class="text-purple-400 flex items-center gap-1 group-hover:translate-x-1 transition">Spielen <span class="text-[10px]">→</span></span>
+                    </div>
+                `;
+                gamesGrid.appendChild(card);
+            });
+            if (state.filter === 'all' || state.filter === 'arcade') renderArcadeCards();
+        }
+
+        function launchGame(key) {
+            state.mode = key;
+            const modeInfo = MODES[key];
+            document.getElementById('modeTitle').textContent = modeInfo.name;
+            document.getElementById('modeDescription').textContent = modeInfo.desc;
+            document.getElementById('modeIconBadge').innerHTML = `${modeInfo.icon}`;
+            document.getElementById('gameTitleBadge').textContent = modeInfo.name;
+
+            hubView.classList.add('hidden');
+            arenaView.classList.remove('hidden');
+            arenaView.classList.add('flex');
+            startOverlay.classList.remove('hidden');
+            resetGame();
+        }
+
+        function resetGame() {
+            state.round = 1;
+            state.totalScore = 0;
+            state.p1TotalScore = 0;
+            state.p2TotalScore = 0;
+            state.p1Wins = 0;
+            state.p2Wins = 0;
+            state.activePlayer = 1;
+            state.p1Guess = null;
+            state.p2Guess = null;
+            state.roundScores = [];
+            state.phase = 'idle';
+            updateRoundUI();
+        }
+
+        function updateRoundUI() {
+            roundDisplay.textContent = `${state.round} / ${state.maxRounds}`;
+
+            if (state.playMode === 'solo') {
+                scoreBoardLabel.textContent = 'Gesamtpunkte';
+                totalScoreDisplay.innerHTML = `${state.totalScore.toFixed(2)} <span class="text-xs text-slate-500">/ 50</span>`;
+            } else if (state.playMode === 'duel') {
+                scoreBoardLabel.textContent = 'Duell-Stand (1v1)';
+                totalScoreDisplay.innerHTML = `<span class="text-cyan-400">P1: ${state.p1Wins}</span> <span class="text-slate-500">vs</span> <span class="text-rose-400">P2: ${state.p2Wins}</span>`;
+            } else if (state.playMode === 'coop') {
+                scoreBoardLabel.textContent = 'Team-Punkte (Mittelwert)';
+                totalScoreDisplay.innerHTML = `${state.totalScore.toFixed(2)} <span class="text-xs text-slate-500">/ 50</span>`;
+            }
+
+            roundDots.innerHTML = '';
+            for (let i = 1; i <= state.maxRounds; i++) {
+                const dot = document.createElement('div');
+                if (i < state.round) dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400';
+                else if (i === state.round) dot.className = 'w-2.5 h-2.5 rounded-full bg-purple-500 animate-pulse';
+                else dot.className = 'w-2.5 h-2.5 rounded-full bg-slate-800';
+                roundDots.appendChild(dot);
+            }
+        }
+
+        document.getElementById('startGameBtn').onclick = () => {
+            startOverlay.classList.add('hidden');
+            startRound();
+        };
+
+        function startRound() {
+            state.phase = 'reveal';
+            stageReveal.classList.remove('hidden');
+            stageRecall.classList.add('hidden');
+            stageResult.classList.add('hidden');
+            state.tapTimes = [];
+            state.gridSelected = [];
+            stopRecallAnim();
+
+            generateTarget();
+            runRevealPhase();
+        }
+
+        function generateTarget() {
+            const mode = state.mode;
+            if (mode === 'harmony') {
+                state.target = { f1: 261 + Math.floor(Math.random() * 200), f2: 440 + Math.floor(Math.random() * 200) };
+            } else if (mode === 'split_radar') {
+                state.target = { x1: 0.2 + Math.random() * 0.25, y1: 0.2 + Math.random() * 0.25, x2: 0.55 + Math.random() * 0.3, y2: 0.55 + Math.random() * 0.3 };
+            } else if (mode === 'duo_balance') {
+                state.target = { weight: 20 + Math.floor(Math.random() * 60) };
+            } else if (mode === 'color') {
+                state.target = { h: Math.floor(Math.random() * 360), s: 40 + Math.floor(Math.random() * 50), l: 35 + Math.floor(Math.random() * 40) };
+            } else if (mode === 'sound') {
+                state.target = { freq: 220 + Math.floor(Math.random() * 580) };
+            } else if (mode === 'time') {
+                state.target = { duration: 1000 + Math.floor(Math.random() * 2500) };
+            } else if (mode === 'shape') {
+                state.target = { scale: 0.3 + Math.random() * 0.5, rotation: Math.floor(Math.random() * 360), rounded: Math.floor(Math.random() * 50) };
+            } else if (mode === 'tempo') {
+                state.target = { bpm: 70 + Math.floor(Math.random() * 90) };
+            } else if (mode === 'vector') {
+                state.target = { x: 0.2 + Math.random() * 0.6, y: 0.2 + Math.random() * 0.6 };
+            } else if (mode === 'angle') {
+                state.target = { angle: Math.floor(Math.random() * 360) };
+            } else if (mode === 'velocity') {
+                state.target = { speed: 2 + Math.random() * 6 };
+            } else if (mode === 'quantity') {
+                state.target = { count: 12 + Math.floor(Math.random() * 28) };
+            } else if (mode === 'strobe') {
+                state.target = { hz: 3 + Math.floor(Math.random() * 10) };
+            } else if (mode === 'grid') {
+                const cells = [];
+                while (cells.length < 4) {
+                    const r = Math.floor(Math.random() * 9);
+                    if (!cells.includes(r)) cells.push(r);
+                }
+                state.target = { cells };
+            } else if (mode === 'echo_gap') {
+                state.target = { gap: 60 + Math.floor(Math.random() * 440) };
+            } else if (mode === 'micro_gap') {
+                state.target = { gap: 2 + Math.round(Math.random() * 56) / 2 };
+            } else if (mode === 'spin') {
+                state.target = { rpm: 30 + Math.floor(Math.random() * 210) };
+            } else if (mode === 'tunnel') {
+                state.target = { t: 800 + Math.floor(Math.random() * 1700) };
+            } else if (mode === 'chroma') {
+                state.target = { c: 2 + Math.round(Math.random() * 36) / 2 };
+            } else if (mode === 'duo_radar') {
+                state.target = { a1: Math.floor(Math.random() * 360), a2: Math.floor(Math.random() * 360) };
+            }
+        }
+
+        function runRevealPhase() {
+            let revealTime = state.proMode ? 1800 : 3000;
+            if (state.mode === 'sound' || state.mode === 'harmony') revealTime = 2200;
+            if (state.mode === 'echo_gap') revealTime = 2600;
+            if (state.mode === 'tunnel') revealTime = Math.round(state.target.t * 1.6) + 600;
+            if (state.mode === 'time') revealTime = state.target.duration + 400;
+
+            let startTime = performance.now();
+            revealTimerBar.style.width = '100%';
+
+            gameCanvas.width = gameCanvas.offsetWidth;
+            gameCanvas.height = gameCanvas.offsetHeight;
+            const ctx = gameCanvas.getContext('2d');
+
+            if (state.mode === 'echo_gap') {
+                audio.clickPair(state.target.gap, 0.25);
+                audio.clickPair(state.target.gap, 1.45);
+            } else if (state.mode === 'tempo') {
+                const beat = 60 / state.target.bpm;
+                for (let k = 0; k * beat < revealTime / 1000; k++) audio.clickAt(k * beat + 0.05, 700);
+            }
+
+            if (state.mode === 'sound') {
+                audio.playFreq(state.target.freq, 'sine', revealTime / 1000);
+            } else if (state.mode === 'harmony') {
+                audio.playChord(state.target.f1, state.target.f2, revealTime / 1000);
+            }
+
+            function animateReveal(now) {
+                let elapsed = now - startTime;
+                let remaining = Math.max(0, 1 - elapsed / revealTime);
+                revealTimerBar.style.width = `${remaining * 100}%`;
+
+                ctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+                renderRevealCanvas(ctx, elapsed);
+
+                if (elapsed < revealTime) {
+                    state.animFrame = requestAnimationFrame(animateReveal);
+                } else {
+                    switchToRecallStage();
+                }
+            }
+
+            state.animFrame = requestAnimationFrame(animateReveal);
+        }
+
+        function renderRevealCanvas(ctx, elapsed, tOv, wOv, hOv) {
+            const w = wOv || gameCanvas.width;
+            const h = hOv || gameCanvas.height;
+            const t = tOv || state.target;
+
+            if (state.mode === 'harmony') {
+                ctx.strokeStyle = '#a855f7';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                for (let x = 0; x < w; x++) {
+                    let y = h / 2 + Math.sin((x + elapsed * 0.2) * (t.f1 / 1000)) * 25 + Math.sin((x + elapsed * 0.3) * (t.f2 / 1000)) * 25;
+                    if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            } else if (state.mode === 'split_radar') {
+                ctx.fillStyle = '#06b6d4';
+                ctx.beginPath(); ctx.arc(t.x1 * w, t.y1 * h, 9, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#f43f5e';
+                ctx.beginPath(); ctx.arc(t.x2 * w, t.y2 * h, 9, 0, Math.PI * 2); ctx.fill();
+            } else if (state.mode === 'duo_balance') {
+                ctx.strokeStyle = '#f59e0b';
+                ctx.lineWidth = 6;
+                ctx.beginPath();
+                ctx.arc(w / 2, h / 2, (t.weight / 100) * (w * 0.38), 0, Math.PI * 2);
+                ctx.stroke();
+            } else if (state.mode === 'color') {
+                ctx.fillStyle = `hsl(${t.h}, ${t.s}%, ${t.l}%)`;
+                ctx.fillRect(0, 0, w, h);
+            } else if (state.mode === 'sound') {
+                ctx.strokeStyle = '#06b6d4';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                for (let x = 0; x < w; x++) {
+                    let y = h / 2 + Math.sin((x + elapsed * 0.2) * (t.freq / 1500)) * 40;
+                    if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            } else if (state.mode === 'time') {
+                let active = elapsed < t.duration;
+                ctx.fillStyle = active ? '#f59e0b' : '#1e293b';
+                ctx.beginPath();
+                ctx.arc(w / 2, h / 2, active ? 60 : 30, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (state.mode === 'shape') {
+                ctx.save();
+                ctx.translate(w / 2, h / 2);
+                ctx.rotate((t.rotation * Math.PI) / 180);
+                ctx.fillStyle = '#f43f5e';
+                let sz = w * t.scale;
+                ctx.beginPath();
+                ctx.roundRect(-sz / 2, -sz / 2, sz, sz, t.rounded);
+                ctx.fill();
+                ctx.restore();
+            } else if (state.mode === 'tempo') {
+                let beatMs = 60000 / t.bpm;
+                let pulse = (elapsed % beatMs) < 120;
+                ctx.fillStyle = pulse ? '#10b981' : '#0e1320';
+                ctx.beginPath();
+                ctx.arc(w / 2, h / 2, pulse ? 70 : 40, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (state.mode === 'vector') {
+                ctx.fillStyle = '#06b6d4';
+                ctx.beginPath();
+                ctx.arc(t.x * w, t.y * h, 10, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (state.mode === 'angle') {
+                ctx.save();
+                ctx.translate(w / 2, h / 2);
+                ctx.rotate((t.angle * Math.PI) / 180);
+                ctx.strokeStyle = '#6366f1';
+                ctx.lineWidth = 5;
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(0, -w * 0.38);
+                ctx.stroke();
+                ctx.restore();
+            } else if (state.mode === 'velocity') {
+                let pos = (elapsed * t.speed * 0.1) % w;
+                ctx.fillStyle = '#f59e0b';
+                ctx.beginPath();
+                ctx.arc(pos, h / 2, 12, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (state.mode === 'quantity') {
+                ctx.fillStyle = '#a855f7';
+                for (let i = 0; i < t.count; i++) {
+                    let rx = (Math.sin(i * 99 + 1) * 0.5 + 0.5) * (w - 40) + 20;
+                    let ry = (Math.cos(i * 33 + 1) * 0.5 + 0.5) * (h - 40) + 20;
+                    ctx.beginPath();
+                    ctx.arc(rx, ry, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            } else if (state.mode === 'strobe') {
+                let blinkMs = 1000 / t.hz;
+                let on = (elapsed % blinkMs) < (blinkMs / 2);
+                ctx.fillStyle = on ? '#ffffff' : '#05070d';
+                ctx.fillRect(0, 0, w, h);
+            } else if (state.mode === 'grid') {
+                let sz = w / 3;
+                for (let i = 0; i < 9; i++) {
+                    let gx = (i % 3) * sz;
+                    let gy = Math.floor(i / 3) * sz;
+                    let active = t.cells.includes(i);
+                    ctx.fillStyle = active ? '#10b981' : '#0e1320';
+                    ctx.strokeStyle = '#1b2438';
+                    ctx.fillRect(gx + 4, gy + 4, sz - 8, sz - 8);
+                    ctx.strokeRect(gx + 4, gy + 4, sz - 8, sz - 8);
+                }
+            } else if (state.mode === 'echo_gap') {
+                const ph = (elapsed / 700) % 1;
+                ctx.strokeStyle = 'rgba(6,182,212,' + (0.6 - ph * 0.5) + ')'; ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.arc(w / 2, h / 2, 30 + ph * 60, 0, Math.PI * 2); ctx.stroke();
+                ctx.font = '44px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText('🎧', w / 2, h / 2);
+            } else if (state.mode === 'micro_gap') {
+                ctx.fillStyle = '#e2e8f0';
+                const pw = w * 0.3, ph = h * 0.5;
+                ctx.fillRect(w / 2 - t.gap / 2 - pw, h / 2 - ph / 2, pw, ph);
+                ctx.fillRect(w / 2 + t.gap / 2, h / 2 - ph / 2, pw, ph);
+            } else if (state.mode === 'spin') {
+                ctx.save();
+                ctx.translate(w / 2, h / 2);
+                ctx.rotate((elapsed * t.rpm / 60000) * Math.PI * 2);
+                ctx.strokeStyle = '#a855f7'; ctx.lineWidth = 6; ctx.lineCap = 'round';
+                ctx.beginPath(); ctx.moveTo(-70, 0); ctx.lineTo(70, 0); ctx.stroke();
+                ctx.fillStyle = '#f43f5e';
+                ctx.beginPath(); ctx.arc(70, 0, 9, 0, Math.PI * 2); ctx.fill();
+                ctx.restore();
+            } else if (state.mode === 'tunnel') {
+                ctx.fillStyle = 'rgba(30,41,59,0.55)'; ctx.fillRect(w * 0.35, h / 2 - 32, w * 0.5, 64);
+                ctx.strokeStyle = '#475569'; ctx.lineWidth = 2; ctx.strokeRect(w * 0.35, h / 2 - 32, w * 0.5, 64);
+                const p = Math.min(1, elapsed / (t.t * 1.6));
+                ctx.fillStyle = '#f59e0b';
+                ctx.beginPath(); ctx.arc((0.05 + 0.8 * p) * w, h / 2, 10, 0, Math.PI * 2); ctx.fill();
+            } else if (state.mode === 'chroma') {
+                ctx.fillStyle = 'hsl(220,10%,38%)'; ctx.fillRect(0, 0, w, h);
+                ctx.fillStyle = 'hsl(220,10%,' + (38 + t.c) + '%)';
+                ctx.beginPath(); ctx.arc(w / 2, h / 2, 70, 0, Math.PI * 2); ctx.fill();
+            } else if (state.mode === 'duo_radar') {
+                ctx.lineWidth = 5; ctx.lineCap = 'round';
+                [[t.a1, '#06b6d4'], [t.a2, '#f43f5e']].forEach(([a, col]) => {
+                    ctx.save(); ctx.translate(w / 2, h / 2); ctx.rotate((a * Math.PI) / 180);
+                    ctx.strokeStyle = col; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -w * 0.4); ctx.stroke();
+                    ctx.restore();
+                });
+                ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(w / 2, h / 2, 6, 0, Math.PI * 2); ctx.fill();
+            }
+        }
+
+        function switchToRecallStage() {
+            state.phase = 'recall';
+            stageReveal.classList.add('hidden');
+            stageRecall.classList.remove('hidden');
+
+            if (state.playMode === 'solo') {
+                playerTurnBanner.className = 'w-full text-center py-2 px-4 rounded-xl font-mono text-xs font-bold uppercase tracking-widest bg-purple-500/10 text-purple-300 border border-purple-500/30 flex items-center justify-center gap-2';
+                playerTurnText.textContent = 'Aus dem Gedächtnis nachbauen';
+                submitGuessBtnText.textContent = 'Bestätigen & Werten';
+            } else if (state.playMode === 'duel') {
+                state.activePlayer = 1;
+                playerTurnBanner.className = 'w-full text-center py-2 px-4 rounded-xl font-mono text-xs font-bold uppercase tracking-widest bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 flex items-center justify-center gap-2 animate-pulse';
+                playerTurnText.textContent = '⚔️ Spieler 1: Stelle deinen Versuch ein!';
+                submitGuessBtnText.textContent = 'Spieler 1 Bestätigen';
+            } else if (state.playMode === 'coop') {
+                state.activePlayer = 1;
+                playerTurnBanner.className = 'w-full text-center py-2 px-4 rounded-xl font-mono text-xs font-bold uppercase tracking-widest bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center justify-center gap-2 animate-pulse';
+                playerTurnText.textContent = '🤝 Spieler 1: Stelle deinen Wert ein (1/2)';
+                submitGuessBtnText.textContent = 'Spieler 1 Eingabe Bestätigen';
+            }
+
+            renderRecallControls();
+        }
+
+        function renderRecallControls() {
+            stopRecallAnim();
+            recallCanvas.onclick = null;
+            state.tapTimes = [];
+            controlsContainer.innerHTML = '';
+            recallCanvas.width = recallCanvas.offsetWidth;
+            recallCanvas.height = recallCanvas.offsetHeight;
+            const ctx = recallCanvas.getContext('2d');
+            const m = state.mode;
+
+            if (m === 'harmony') {
+                state.guess = { f1: 300, f2: 500 };
+                controlsContainer.innerHTML = `
+                    <div class="flex flex-col gap-2 font-mono text-xs">
+                        <div class="flex justify-between text-slate-300"><span>Akkord-Frequenz 1</span><span id="f1Val" class="text-purple-400">300 Hz</span></div>
+                        <input type="range" id="f1Slider" min="200" max="500" value="300">
+                        <div class="flex justify-between text-slate-300"><span>Akkord-Frequenz 2</span><span id="f2Val" class="text-cyan-400">500 Hz</span></div>
+                        <input type="range" id="f2Slider" min="400" max="700" value="500">
+                        <button id="listenChordBtn" class="py-2 bg-slate-800 rounded-xl text-amber-300 border border-amber-500/30 flex items-center justify-center gap-2 mt-1"><span class="">🎵</span> Akkord Anhören</button>
+                    </div>
+                `;
+                document.getElementById('f1Slider').oninput = e => { state.guess.f1 = parseInt(e.target.value); if (!state.proMode) document.getElementById('f1Val').textContent = `${state.guess.f1} Hz`; };
+                document.getElementById('f2Slider').oninput = e => { state.guess.f2 = parseInt(e.target.value); if (!state.proMode) document.getElementById('f2Val').textContent = `${state.guess.f2} Hz`; };
+                document.getElementById('listenChordBtn').onclick = () => audio.playChord(state.guess.f1, state.guess.f2, 0.6);
+
+            } else if (m === 'split_radar') {
+                state.guess = { x: 0.5, y: 0.5 };
+                controlsContainer.innerHTML = `<div class="text-center font-mono text-xs text-cyan-400">Klicke im oberen Feld auf deinen Zielpunkt!</div>`;
+                const drawRadarGuess = () => {
+                    ctx.clearRect(0, 0, recallCanvas.width, recallCanvas.height);
+                    ctx.fillStyle = state.activePlayer === 1 ? '#06b6d4' : '#f43f5e';
+                    ctx.beginPath();
+                    ctx.arc(state.guess.x * recallCanvas.width, state.guess.y * recallCanvas.height, 9, 0, Math.PI * 2);
+                    ctx.fill();
+                };
+                drawRadarGuess();
+                recallCanvas.onclick = (e) => {
+                    const rect = recallCanvas.getBoundingClientRect();
+                    state.guess.x = (e.clientX - rect.left) / rect.width;
+                    state.guess.y = (e.clientY - rect.top) / rect.height;
+                    drawRadarGuess();
+                };
+
+            } else if (m === 'duo_balance') {
+                state.guess = { val: 50 };
+                controlsContainer.innerHTML = `
+                    <div class="flex flex-col gap-2 font-mono text-xs">
+                        <div class="flex justify-between text-slate-300"><span>Kraft- / Waagewert</span><span id="balVal" class="text-amber-400">50%</span></div>
+                        <input type="range" id="balSlider" min="0" max="100" value="50">
+                    </div>
+                `;
+                document.getElementById('balSlider').oninput = e => {
+                    state.guess.val = parseFloat(e.target.value);
+                    if (!state.proMode) document.getElementById('balVal').textContent = `${state.guess.val}%`;
+                };
+
+            } else if (m === 'color') {
+                state.guess = { h: 180, s: 50, l: 50 };
+                controlsContainer.innerHTML = `
+                    <div class="flex flex-col gap-2 font-mono text-xs">
+                        <div class="flex justify-between text-slate-300"><span>Farbton (Hue)</span><span id="hVal" class="text-purple-400">180°</span></div>
+                        <input type="range" id="hSlider" min="0" max="360" value="180">
+                        <div class="flex justify-between text-slate-300"><span>Sättigung (Sat)</span><span id="sVal" class="text-purple-400">50%</span></div>
+                        <input type="range" id="sSlider" min="0" max="100" value="50">
+                        <div class="flex justify-between text-slate-300"><span>Helligkeit (Light)</span><span id="lVal" class="text-purple-400">50%</span></div>
+                        <input type="range" id="lSlider" min="0" max="100" value="50">
+                    </div>
+                `;
+                const updateColor = () => {
+                    ctx.fillStyle = `hsl(${state.guess.h}, ${state.guess.s}%, ${state.guess.l}%)`;
+                    ctx.fillRect(0, 0, recallCanvas.width, recallCanvas.height);
+                };
+                updateColor();
+                document.getElementById('hSlider').oninput = e => { state.guess.h = parseInt(e.target.value); if (!state.proMode) document.getElementById('hVal').textContent = `${state.guess.h}°`; updateColor(); };
+                document.getElementById('sSlider').oninput = e => { state.guess.s = parseInt(e.target.value); if (!state.proMode) document.getElementById('sVal').textContent = `${state.guess.s}%`; updateColor(); };
+                document.getElementById('lSlider').oninput = e => { state.guess.l = parseInt(e.target.value); if (!state.proMode) document.getElementById('lVal').textContent = `${state.guess.l}%`; updateColor(); };
+
+            } else if (m === 'sound') {
+                state.guess = { freq: 440 };
+                controlsContainer.innerHTML = `
+                    <div class="flex flex-col gap-2 font-mono text-xs">
+                        <div class="flex justify-between text-slate-300"><span>Ton-Frequenz</span><span id="freqVal" class="text-cyan-400">440 Hz</span></div>
+                        <input type="range" id="freqSlider" min="200" max="800" value="440">
+                        <button id="listenBtn" class="py-2 bg-slate-800 rounded-xl text-cyan-400 border border-cyan-500/30 flex items-center justify-center gap-2 mt-1"><span class="">🔊</span> Ton Anhören</button>
+                    </div>
+                `;
+                document.getElementById('freqSlider').oninput = e => {
+                    state.guess.freq = parseInt(e.target.value);
+                    if (!state.proMode) document.getElementById('freqVal').textContent = `${state.guess.freq} Hz`;
+                };
+                document.getElementById('listenBtn').onclick = () => audio.playFreq(state.guess.freq, 'sine', 0.6);
+
+            } else if (m === 'time') {
+                state.guess = { duration: 0 };
+                controlsContainer.innerHTML = `
+                    <button id="timeHoldBtn" class="py-5 rounded-2xl bg-amber-500/20 border border-amber-500/40 text-amber-300 font-mono font-bold text-sm tracking-wider flex items-center justify-center gap-2">
+                        <span class="text-xl">👆</span> DRÜCKEN & HALTEN
+                    </button>
+                    <div id="timeResultText" class="text-center font-mono text-xs text-slate-400 mt-1">Halte den Button so lange gedrückt wie die Phase vorhin!</div>
+                `;
+                const btn = document.getElementById('timeHoldBtn');
+                const startHold = (e) => { e.preventDefault(); state.timePressStart = performance.now(); btn.classList.add('bg-amber-500', 'text-slate-950'); };
+                const endHold = (e) => {
+                    e.preventDefault();
+                    if (state.timePressStart) {
+                        state.guess.duration = performance.now() - state.timePressStart;
+                        state.timePressStart = 0;
+                        btn.classList.remove('bg-amber-500', 'text-slate-950');
+                        document.getElementById('timeResultText').textContent = `Erfasste Dauer: ${(state.guess.duration / 1000).toFixed(2)}s`;
+                    }
+                };
+                btn.style.touchAction = 'none';
+                btn.addEventListener('pointerdown', startHold);
+                btn.addEventListener('pointerup', endHold);
+                btn.addEventListener('pointercancel', endHold);
+
+            } else if (m === 'vector') {
+                state.guess = { x: 0.5, y: 0.5 };
+                controlsContainer.innerHTML = `<div class="text-center font-mono text-xs text-cyan-400">Klicke im oberen Radar-Feld auf die gemerkte Position!</div>`;
+                const drawRecallVector = () => {
+                    ctx.clearRect(0, 0, recallCanvas.width, recallCanvas.height);
+                    ctx.fillStyle = '#a855f7';
+                    ctx.beginPath();
+                    ctx.arc(state.guess.x * recallCanvas.width, state.guess.y * recallCanvas.height, 8, 0, Math.PI * 2);
+                    ctx.fill();
+                };
+                drawRecallVector();
+                recallCanvas.onclick = (e) => {
+                    const rect = recallCanvas.getBoundingClientRect();
+                    state.guess.x = (e.clientX - rect.left) / rect.width;
+                    state.guess.y = (e.clientY - rect.top) / rect.height;
+                    drawRecallVector();
+                };
+
+            } else if (m === 'tempo') {
+                state.guess = { bpm: 120 };
+                controlsContainer.innerHTML = `
+                    <button id="tempoTapBtn" class="py-4 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-mono font-bold text-xs tracking-wider flex items-center justify-center gap-2">
+                        <span class="">👆</span> BEAT 4-MAL TAPPEN
+                    </button>
+                    <div id="tempoDisplay" class="text-center font-mono text-xs text-slate-400 mt-1">Verbleibende Taps: 4</div>
+                `;
+                document.getElementById('tempoTapBtn').onclick = () => {
+                    audio.playClick(1000);
+                    state.tapTimes.push(performance.now());
+                    let rem = 4 - state.tapTimes.length;
+                    document.getElementById('tempoDisplay').textContent = rem > 0 ? `Verbleibende Taps: ${rem}` : 'Takt erfasst!';
+                    if (state.tapTimes.length >= 4) {
+                        let intervals = [];
+                        for (let i = 1; i < 4; i++) intervals.push(state.tapTimes[i] - state.tapTimes[i - 1]);
+                        let avgMs = intervals.reduce((a, b) => a + b) / intervals.length;
+                        state.guess.bpm = Math.round(60000 / avgMs);
+                    }
+                };
+
+            } else if (m === 'grid') {
+                state.guess = { cells: [] };
+                controlsContainer.innerHTML = `<div class="text-center font-mono text-xs text-emerald-400">Klicke im oberen Grid auf die 4 gemerkten Felder!</div>`;
+                const drawRecallGrid = () => {
+                    ctx.clearRect(0, 0, recallCanvas.width, recallCanvas.height);
+                    let sz = recallCanvas.width / 3;
+                    for (let i = 0; i < 9; i++) {
+                        let gx = (i % 3) * sz;
+                        let gy = Math.floor(i / 3) * sz;
+                        let active = state.guess.cells.includes(i);
+                        ctx.fillStyle = active ? '#10b981' : '#0e1320';
+                        ctx.strokeStyle = '#1b2438';
+                        ctx.fillRect(gx + 4, gy + 4, sz - 8, sz - 8);
+                        ctx.strokeRect(gx + 4, gy + 4, sz - 8, sz - 8);
+                    }
+                };
+                drawRecallGrid();
+                recallCanvas.onclick = (e) => {
+                    const rect = recallCanvas.getBoundingClientRect();
+                    let gx = Math.floor((e.clientX - rect.left) / (rect.width / 3));
+                    let gy = Math.floor((e.clientY - rect.top) / (rect.height / 3));
+                    let idx = gy * 3 + gx;
+                    if (state.guess.cells.includes(idx)) {
+                        state.guess.cells = state.guess.cells.filter(c => c !== idx);
+                    } else {
+                        state.guess.cells.push(idx);
+                    }
+                    drawRecallGrid();
+                };
+
+            } else if (m === 'shape') {
+                state.guess = { scale: 0.5, rotation: 0, rounded: 10 };
+                controlsContainer.innerHTML = `
+                    <div class="flex flex-col gap-1.5 font-mono text-xs">
+                        <div class="flex justify-between text-slate-300"><span>Größe</span><span id="shScaleVal" class="text-rose-400">50%</span></div>
+                        <input type="range" id="shScale" min="20" max="90" value="50">
+                        <div class="flex justify-between text-slate-300"><span>Drehung</span><span id="shRotVal" class="text-rose-400">0°</span></div>
+                        <input type="range" id="shRot" min="0" max="359" value="0">
+                        <div class="flex justify-between text-slate-300"><span>Ecken-Rundung</span><span id="shRoundVal" class="text-rose-400">10</span></div>
+                        <input type="range" id="shRound" min="0" max="50" value="10">
+                    </div>`;
+                const sh = (id, key, fmt, conv) => { document.getElementById(id).oninput = e => { const v = parseFloat(e.target.value); state.guess[key] = conv(v); if (!state.proMode) document.getElementById(id + 'Val').textContent = fmt(v); }; };
+                sh('shScale', 'scale', v => v + '%', v => v / 100);
+                sh('shRot', 'rotation', v => v + '°', v => v);
+                sh('shRound', 'rounded', v => v, v => v);
+                startPreview();
+
+            } else if (m === 'duo_radar') {
+                state.guess = { a1: 90, a2: 270 };
+                controlsContainer.innerHTML = `
+                    <div class="flex flex-col gap-1.5 font-mono text-xs">
+                        <div class="flex justify-between text-slate-300"><span>Laser A (cyan)</span><span id="a1V" class="text-cyan-400">90°</span></div>
+                        <input type="range" id="a1S" min="0" max="359" value="90">
+                        <div class="flex justify-between text-slate-300"><span>Laser B (rosa)</span><span id="a2V" class="text-rose-400">270°</span></div>
+                        <input type="range" id="a2S" min="0" max="359" value="270">
+                    </div>`;
+                document.getElementById('a1S').oninput = e => { state.guess.a1 = parseInt(e.target.value); if (!state.proMode) document.getElementById('a1V').textContent = state.guess.a1 + '°'; };
+                document.getElementById('a2S').oninput = e => { state.guess.a2 = parseInt(e.target.value); if (!state.proMode) document.getElementById('a2V').textContent = state.guess.a2 + '°'; };
+                startPreview();
+
+            } else if (m === 'tunnel') {
+                state.guess = { val: 0 };
+                controlsContainer.innerHTML = `
+                    <div class="flex gap-2">
+                        <button id="tunStart" class="flex-1 py-3 rounded-xl bg-slate-800 border border-amber-500/30 text-amber-300 font-mono text-xs font-bold">▶ BALL STARTEN</button>
+                        <button id="tunHit" class="flex-1 py-3 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 font-mono text-xs font-bold">🎯 JETZT!</button>
+                    </div>
+                    <div id="tunInfo" class="text-center font-mono text-xs text-slate-400">Starte den Ball. Er verschwindet im Tunnel – drücke, wenn er wieder herauskommt!</div>`;
+                const vv = 0.5 / state.target.t;
+                let runStart = 0, hit = false;
+                const loop = (now) => {
+                    const W = recallCanvas.width, H = recallCanvas.height;
+                    ctx.clearRect(0, 0, W, H);
+                    ctx.fillStyle = 'rgba(30,41,59,0.9)'; ctx.fillRect(W * 0.35, H / 2 - 32, W * 0.5, 64);
+                    ctx.strokeStyle = '#475569'; ctx.lineWidth = 2; ctx.strokeRect(W * 0.35, H / 2 - 32, W * 0.5, 64);
+                    if (runStart) {
+                        const p = Math.min(1, 0.05 + vv * (now - runStart));
+                        if (p < 0.35 || hit) { ctx.fillStyle = hit ? '#10b981' : '#f59e0b'; ctx.beginPath(); ctx.arc(p * W, H / 2, 10, 0, Math.PI * 2); ctx.fill(); }
+                    }
+                    state.recallAnim = requestAnimationFrame(loop);
+                };
+                state.recallAnim = requestAnimationFrame(loop);
+                document.getElementById('tunStart').onclick = () => { runStart = performance.now(); hit = false; };
+                document.getElementById('tunHit').onclick = () => {
+                    if (!runStart || hit) return;
+                    hit = true;
+                    state.guess.val = Math.max(0, Math.round(performance.now() - runStart - 0.6 * state.target.t));
+                    document.getElementById('tunInfo').textContent = state.proMode ? 'Erfasst!' : `Erfasst: ${state.guess.val} ms im Tunnel`;
+                };
+
+            } else {
+                let min = 0, max = 100, val = 50, label = 'Wert', step = 1;
+                if (m === 'angle') { min = 0; max = 360; val = 180; label = 'Winkel (Grad)'; }
+                else if (m === 'velocity') { min = 1; max = 10; val = 5; label = 'Tempo'; }
+                else if (m === 'quantity') { min = 5; max = 50; val = 25; label = 'Anzahl Punkte'; }
+                else if (m === 'strobe') { min = 1; max = 15; val = 7; label = 'Frequenz (Hz)'; }
+                else if (m === 'echo_gap') { min = 40; max = 600; val = 250; step = 5; label = 'Abstand (ms)'; }
+                else if (m === 'micro_gap') { min = 1; max = 40; val = 15; step = 0.5; label = 'Spaltbreite (px)'; }
+                else if (m === 'spin') { min = 20; max = 260; val = 120; label = 'Drehzahl (RPM)'; }
+                else if (m === 'chroma') { min = 0; max = 30; val = 12; step = 0.5; label = 'Kontrast (%)'; }
+
+                state.guess = { val };
+                controlsContainer.innerHTML = `
+                    <div class="flex flex-col gap-2 font-mono text-xs">
+                        <div class="flex justify-between text-slate-300"><span>${label}</span><span id="genVal" class="text-purple-400">${val}</span></div>
+                        <input type="range" id="genSlider" min="${min}" max="${max}" value="${val}" step="${step}">
+                    </div>
+                `;
+                document.getElementById('genSlider').oninput = e => {
+                    state.guess.val = parseFloat(e.target.value);
+                    if (!state.proMode) document.getElementById('genVal').textContent = state.guess.val;
+                };
+                if (m === 'echo_gap') {
+                    const lb = document.createElement('button');
+                    lb.className = 'py-2 bg-slate-800 rounded-xl text-cyan-400 border border-cyan-500/30 font-mono text-xs flex items-center justify-center gap-2 mt-1';
+                    lb.textContent = '🎧 Klicks anhören';
+                    lb.onclick = () => audio.clickPair(state.guess.val, 0.02);
+                    controlsContainer.appendChild(lb);
+                }
+                if (PREVIEW[m]) startPreview();
+            }
+        }
+
+        submitGuessBtn.onclick = () => {
+            if (state.phase !== 'recall') return;
+
+            // Handle 1v1 Duel turn switching
+            if (state.playMode === 'duel' && state.activePlayer === 1) {
+                state.p1Guess = JSON.parse(JSON.stringify(state.guess));
+                state.activePlayer = 2;
+                playerTurnBanner.className = 'w-full text-center py-2 px-4 rounded-xl font-mono text-xs font-bold uppercase tracking-widest bg-rose-500/20 text-rose-300 border border-rose-500/40 flex items-center justify-center gap-2 animate-pulse';
+                playerTurnText.textContent = '⚔️ Spieler 2: Stelle deinen Versuch ein!';
+                submitGuessBtnText.textContent = 'Spieler 2 Bestätigen & Werten';
+                renderRecallControls();
+                audio.playClick(600);
+                return;
+            }
+
+            if (state.playMode === 'duel' && state.activePlayer === 2) {
+                state.p2Guess = JSON.parse(JSON.stringify(state.guess));
+            }
+
+            // Handle Koop turn switching & Mittelwert Calculation
+            if (state.playMode === 'coop' && state.activePlayer === 1) {
+                state.p1Guess = JSON.parse(JSON.stringify(state.guess));
+                state.activePlayer = 2;
+                playerTurnBanner.className = 'w-full text-center py-2 px-4 rounded-xl font-mono text-xs font-bold uppercase tracking-widest bg-purple-500/20 text-purple-300 border border-purple-500/40 flex items-center justify-center gap-2 animate-pulse';
+                playerTurnText.textContent = '🤝 Spieler 2: Stelle deinen Wert ein (2/2)';
+                submitGuessBtnText.textContent = 'Spieler 2 Bestätigen & Mittelwert Berechnen';
+                renderRecallControls();
+                audio.playClick(600);
+                return;
+            }
+
+            if (state.playMode === 'coop' && state.activePlayer === 2) {
+                state.p2Guess = JSON.parse(JSON.stringify(state.guess));
+                // Calculate Team Mittelwert (Average)
+                state.teamGuess = calculateAverageGuess(state.p1Guess, state.p2Guess, state.mode);
+            }
+
+            let sc1 = 0, sc2 = 0, coopScore = 0;
+            if (state.playMode === 'duel') {
+                sc1 = evaluateScore(state.target, state.p1Guess, state.mode);
+                sc2 = evaluateScore(state.target, state.p2Guess, state.mode);
+                if (sc1 > sc2) state.p1Wins++; else if (sc2 > sc1) state.p2Wins++;
+                state.p1TotalScore += sc1;
+                state.p2TotalScore += sc2;
+                state.totalScore += Math.max(sc1, sc2);
+                state.roundScores.push(Math.max(sc1, sc2));
+            } else if (state.playMode === 'coop') {
+                coopScore = evaluateScore(state.target, state.teamGuess, state.mode);
+                state.totalScore += coopScore;
+                state.roundScores.push(coopScore);
+            } else {
+                const score = evaluateScore(state.target, state.guess, state.mode);
+                state.totalScore += score;
+                state.roundScores.push(score);
+            }
+
+            showRoundResult(sc1, sc2, coopScore);
+        };
+
+        function calculateAverageGuess(p1, p2, mode) {
+            if (!p1 || !p2) return p1 || p2;
+            let avg = {};
+            if (mode === 'color') {
+                let h1 = p1.h, h2 = p2.h;
+                let diff = Math.abs(h1 - h2);
+                let hAvg = diff > 180 ? ((h1 + h2 + 360) / 2) % 360 : (h1 + h2) / 2;
+                avg = {
+                    h: Math.round(hAvg),
+                    s: Math.round((p1.s + p2.s) / 2),
+                    l: Math.round((p1.l + p2.l) / 2)
+                };
+            } else if (mode === 'harmony') {
+                avg = {
+                    f1: Math.round((p1.f1 + p2.f1) / 2),
+                    f2: Math.round((p1.f2 + p2.f2) / 2)
+                };
+            } else if (mode === 'vector' || mode === 'split_radar') {
+                avg = {
+                    x: (p1.x + p2.x) / 2,
+                    y: (p1.y + p2.y) / 2
+                };
+            } else if (mode === 'angle') {
+                avg = { val: Math.round(circMean(p1.val, p2.val)) };
+            } else if (mode === 'duo_radar') {
+                avg = { a1: Math.round(circMean(p1.a1, p2.a1)), a2: Math.round(circMean(p1.a2, p2.a2)) };
+            } else if (mode === 'shape') {
+                avg = { scale: (p1.scale + p2.scale) / 2, rotation: Math.round(circMean(p1.rotation, p2.rotation)), rounded: (p1.rounded + p2.rounded) / 2 };
+            } else if (mode === 'grid') {
+                let combined = Array.from(new Set([...(p1.cells || []), ...(p2.cells || [])]));
+                avg = { cells: combined };
+            } else {
+                let v1 = p1.freq || p1.duration || p1.bpm || p1.val || 0;
+                let v2 = p2.freq || p2.duration || p2.bpm || p2.val || 0;
+                let mean = (v1 + v2) / 2;
+                if (p1.freq !== undefined) avg.freq = Math.round(mean);
+                else if (p1.duration !== undefined) avg.duration = Math.round(mean);
+                else if (p1.bpm !== undefined) avg.bpm = Math.round(mean);
+                else avg.val = parseFloat(mean.toFixed(2));
+            }
+            return avg;
+        }
+
+        function evaluateScore(target, guess, mode) {
+            if (!guess) return 0;
+            let score = 0;
+
+            if (mode === 'color') {
+                const dh = Math.min(Math.abs(target.h - guess.h), 360 - Math.abs(target.h - guess.h)) / 180;
+                const ds = Math.abs(target.s - guess.s) / 100;
+                const dl = Math.abs(target.l - guess.l) / 100;
+                const dist = Math.sqrt(dh*dh * 0.5 + ds*ds * 0.25 + dl*dl * 0.25);
+                score = Math.max(0, 10 * Math.exp(-dist * 4));
+            } else if (mode === 'harmony') {
+                const r1 = Math.abs(target.f1 - guess.f1) / target.f1;
+                const r2 = Math.abs(target.f2 - guess.f2) / target.f2;
+                score = Math.max(0, 10 * Math.exp(-(r1 + r2) * 3.5));
+            } else if (mode === 'split_radar') {
+                const targetX = (target.x1 + target.x2) / 2;
+                const targetY = (target.y1 + target.y2) / 2;
+                const dx = targetX - (guess.x || 0.5);
+                const dy = targetY - (guess.y || 0.5);
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                score = Math.max(0, 10 * Math.exp(-dist * 5));
+            } else if (mode === 'sound') {
+                const ratio = Math.abs(target.freq - guess.freq) / target.freq;
+                score = Math.max(0, 10 * Math.exp(-ratio * 6.5));
+            } else if (mode === 'time') {
+                const diffMs = Math.abs(target.duration - (guess.duration || 0));
+                score = Math.max(0, 10 * Math.exp(-(diffMs / target.duration) * 3.5));
+            } else if (mode === 'vector') {
+                const dx = target.x - (guess.x || 0.5);
+                const dy = target.y - (guess.y || 0.5);
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                score = Math.max(0, 10 * Math.exp(-dist * 5));
+            } else if (mode === 'grid') {
+                let matches = target.cells.filter(c => (guess.cells || []).includes(c)).length;
+                const extra = (guess.cells || []).length - matches;
+                score = Math.max(0, (matches - extra * 0.5) / target.cells.length) * 10;
+            } else if (mode === 'angle') {
+                score = 10 * Math.exp(-(cdiff(target.angle, guess.val) / 180) * 5);
+            } else if (mode === 'shape') {
+                const ds = Math.min(1, Math.abs(target.scale - guess.scale) / 0.5);
+                const dr = Math.min(cdiff(target.rotation, guess.rotation) % 90, 90 - (cdiff(target.rotation, guess.rotation) % 90)) / 45;
+                const dc = Math.abs(target.rounded - guess.rounded) / 50;
+                score = 10 * Math.exp(-Math.sqrt(ds * ds * 0.4 + dr * dr * 0.35 + dc * dc * 0.25) * 3);
+            } else if (mode === 'duo_radar') {
+                const a = cdiff(target.a1, guess.a1) + cdiff(target.a2, guess.a2);
+                const b = cdiff(target.a1, guess.a2) + cdiff(target.a2, guess.a1);
+                score = 10 * Math.exp(-(Math.min(a, b) / 2 / 180) * 5);
+            } else if (REL[mode]) {
+                const [key, k] = REL[mode];
+                score = 10 * Math.exp(-(Math.abs(target[key] - (guess.val || 0)) / target[key]) * k);
+            } else {
+                let targetVal = target.val || target.bpm || target.angle || target.speed || target.count || target.hz || target.weight || 50;
+                let guessVal = guess.val || guess.bpm || 50;
+                let diff = Math.abs(targetVal - guessVal) / (targetVal || 1);
+                score = Math.max(0, 10 * Math.exp(-diff * 3));
+            }
+            return parseFloat(score.toFixed(2));
+        }
+
+        function showRoundResult(sc1, sc2, coopScore) {
+            state.phase = 'result';
+            cancelAnimationFrame(state.animFrame);
+            stopRecallAnim();
+            stageRecall.classList.add('hidden');
+            stageResult.classList.remove('hidden');
+
+            const roundScoreBadge = document.getElementById('roundScoreBadge');
+
+            if (state.playMode === 'solo') {
+                resultPhaseTitle.textContent = 'RUNDENERGEBNIS';
+                const sc = state.roundScores[state.roundScores.length - 1] || 0;
+                roundScoreBadge.innerHTML = `+${sc.toFixed(2)} <span class="text-lg text-slate-400">/ 10</span>`;
+                if (sc > 8.5) audio.playSuccess(); else audio.playClick(500);
+
+                comparisonContainer.className = 'grid grid-cols-2 gap-3 w-full max-w-sm my-2';
+                comparisonContainer.innerHTML = `
+                    <div class="flex flex-col items-center glass-panel p-3 rounded-2xl border border-slate-800">
+                        <span class="text-[10px] text-slate-400 uppercase font-mono mb-2">Original</span>
+                        <div id="targetValBox" class="min-w-[5rem] min-h-[4rem] rounded-xl bg-slate-950 border border-slate-700 flex items-center justify-center font-mono font-bold text-xs text-cyan-400 p-2 text-center overflow-hidden"></div>
+                    </div>
+                    <div class="flex flex-col items-center glass-panel p-3 rounded-2xl border border-slate-800">
+                        <span class="text-[10px] text-slate-400 uppercase font-mono mb-2">Dein Versuch</span>
+                        <div id="guessValBox" class="min-w-[5rem] min-h-[4rem] rounded-xl bg-slate-950 border border-slate-700 flex items-center justify-center font-mono font-bold text-xs text-purple-400 p-2 text-center overflow-hidden"></div>
+                    </div>
+                `;
+            } else if (state.playMode === 'duel') {
+                resultPhaseTitle.textContent = 'DUELL RUNDEN-DUELL (1v1)';
+                let winnerText = sc1 > sc2 ? '👑 Spieler 1 gewinnt!' : sc2 > sc1 ? '👑 Spieler 2 gewinnt!' : '🤝 Unentschieden!';
+                roundScoreBadge.innerHTML = `<span class="text-xl font-mono text-amber-300">${winnerText}</span>`;
+
+                comparisonContainer.className = 'grid grid-cols-3 gap-2 w-full max-w-md my-2';
+                comparisonContainer.innerHTML = `
+                    <div class="flex flex-col items-center glass-panel p-2.5 rounded-2xl border border-cyan-500/30">
+                        <span class="text-[10px] text-cyan-400 uppercase font-mono font-bold mb-1">Spieler 1</span>
+                        <div id="p1ValBox" class="w-full min-h-[3.5rem] rounded-xl bg-slate-950 border border-slate-700 flex items-center justify-center font-mono text-[11px] text-cyan-300 text-center p-1"></div>
+                        <span class="text-[11px] font-mono text-cyan-400 font-bold mt-1.5">+${sc1.toFixed(2)}</span>
+                    </div>
+                    <div class="flex flex-col items-center glass-panel p-2.5 rounded-2xl border border-purple-500/30 bg-purple-950/20">
+                        <span class="text-[10px] text-purple-300 uppercase font-mono mb-1">Zielwert</span>
+                        <div id="targetValBox" class="w-full min-h-[3.5rem] rounded-xl bg-slate-950 border border-slate-700 flex items-center justify-center font-mono text-[11px] text-purple-300 text-center p-1"></div>
+                    </div>
+                    <div class="flex flex-col items-center glass-panel p-2.5 rounded-2xl border border-rose-500/30">
+                        <span class="text-[10px] text-rose-400 uppercase font-mono font-bold mb-1">Spieler 2</span>
+                        <div id="p2ValBox" class="w-full min-h-[3.5rem] rounded-xl bg-slate-950 border border-slate-700 flex items-center justify-center font-mono text-[11px] text-rose-300 text-center p-1"></div>
+                        <span class="text-[11px] font-mono text-rose-400 font-bold mt-1.5">+${sc2.toFixed(2)}</span>
+                    </div>
+                `;
+            } else if (state.playMode === 'coop') {
+                resultPhaseTitle.textContent = 'KOOP TEAM-MITTELWERT';
+                roundScoreBadge.innerHTML = `+${coopScore.toFixed(2)} <span class="text-lg text-slate-400">/ 10</span>`;
+                if (coopScore > 8.0) audio.playSuccess(); else audio.playClick(500);
+
+                comparisonContainer.className = 'grid grid-cols-4 gap-1.5 w-full max-w-md my-2';
+                comparisonContainer.innerHTML = `
+                    <div class="flex flex-col items-center glass-panel p-2 rounded-xl border border-amber-500/30">
+                        <span class="text-[9px] text-amber-300 uppercase font-mono mb-1">P1 Wert</span>
+                        <div id="p1ValBox" class="w-full min-h-[3rem] rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center font-mono text-[10px] text-amber-300 text-center p-1"></div>
+                    </div>
+                    <div class="flex flex-col items-center glass-panel p-2 rounded-xl border border-purple-500/30">
+                        <span class="text-[9px] text-purple-300 uppercase font-mono mb-1">P2 Wert</span>
+                        <div id="p2ValBox" class="w-full min-h-[3rem] rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center font-mono text-[10px] text-purple-300 text-center p-1"></div>
+                    </div>
+                    <div class="flex flex-col items-center glass-panel p-2 rounded-xl border border-emerald-500/40 bg-emerald-950/20">
+                        <span class="text-[9px] text-emerald-400 font-bold uppercase font-mono mb-1">Mittelwert</span>
+                        <div id="guessValBox" class="w-full min-h-[3rem] rounded-lg bg-slate-950 border border-emerald-500/50 flex items-center justify-center font-mono text-[10px] text-emerald-300 text-center p-1 font-bold"></div>
+                    </div>
+                    <div class="flex flex-col items-center glass-panel p-2 rounded-xl border border-cyan-500/30">
+                        <span class="text-[9px] text-cyan-300 uppercase font-mono mb-1">Zielwert</span>
+                        <div id="targetValBox" class="w-full min-h-[3rem] rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center font-mono text-[10px] text-cyan-300 text-center p-1"></div>
+                    </div>
+                `;
+            }
+
+            // Fill visual values
+            const targetBox = document.getElementById('targetValBox');
+            const guessBox = document.getElementById('guessValBox');
+            const p1Box = document.getElementById('p1ValBox');
+            const p2Box = document.getElementById('p2ValBox');
+
+            const UNITS = { echo_gap: ' ms', micro_gap: ' px', spin: ' RPM', tunnel: ' ms', chroma: ' %', angle: '°', strobe: ' Hz', duo_balance: ' %', tempo: ' BPM', sound: ' Hz' };
+            const fmtVal = (v) => {
+                if (!v) return '–';
+                if (v.h !== undefined) return `H${v.h}° S${v.s}% L${v.l}%`;
+                if (v.f1 !== undefined) return `${v.f1} / ${v.f2} Hz`;
+                if (v.a1 !== undefined) return `${Math.round(v.a1)}° / ${Math.round(v.a2)}°`;
+                if (v.scale !== undefined) return `${Math.round(v.scale * 100)}% · ${Math.round(v.rotation)}° · R${Math.round(v.rounded)}`;
+                if (v.cells) return v.cells.length ? v.cells.map(c => c + 1).sort((a, b) => a - b).join(',') : '–';
+                if (v.x1 !== undefined) return `${Math.round((v.x1 + v.x2) / 2 * 100)}|${Math.round((v.y1 + v.y2) / 2 * 100)}`;
+                if (v.x !== undefined) return `${Math.round(v.x * 100)}|${Math.round(v.y * 100)}`;
+                if (v.duration !== undefined) return `${(v.duration / 1000).toFixed(2)} s`;
+                const n = [v.val, v.freq, v.bpm, v.angle, v.speed, v.count, v.hz, v.weight, v.gap, v.rpm, v.c, v.t].find(x => x !== undefined);
+                return n === undefined ? '–' : `${Number.isInteger(n) ? n : (+n).toFixed(1)}${UNITS[state.mode] || ''}`;
+            };
+            if (targetBox) targetBox.textContent = fmtVal(state.target);
+            if (guessBox) guessBox.textContent = fmtVal(state.playMode === 'coop' ? state.teamGuess : state.guess);
+            if (p1Box) p1Box.textContent = fmtVal(state.p1Guess);
+            if (p2Box) p2Box.textContent = fmtVal(state.p2Guess);
+
+            updateRoundUI();
+        }
+
+        document.getElementById('nextRoundBtn').onclick = () => {
+            if (state.round < state.maxRounds) {
+                state.round++;
+                startRound();
+            } else {
+                finishGame();
+            }
+        };
+
+        function finishGame() {
+            summaryModal.classList.remove('hidden');
+            document.getElementById('summaryScoreDisplay').innerHTML = `${state.totalScore.toFixed(2)} <span class="text-lg text-slate-400">/ 50</span>`;
+
+            let rank = 'Anfänger-Sinn 🐣';
+            if (state.totalScore > 45) rank = 'Quanten-Gehirn 🧠⚡';
+            else if (state.totalScore > 38) rank = 'Adler-Auge & Perfektes Gehör 🦅';
+            else if (state.totalScore > 30) rank = 'Scharfer Beobachter 🎯';
+            document.getElementById('summaryRankTitle').textContent = rank;
+            if (state.playMode === 'duel') {
+                document.getElementById('summaryScoreDisplay').innerHTML = `${state.p1Wins} <span class="text-lg text-slate-400">:</span> ${state.p2Wins}`;
+                document.getElementById('summaryRankTitle').textContent = state.p1Wins > state.p2Wins ? '👑 Spieler 1 gewinnt das Duell!' : state.p2Wins > state.p1Wins ? '👑 Spieler 2 gewinnt das Duell!' : '🤝 Unentschieden!';
+            }
+
+            const roundsList = document.getElementById('summaryRoundsList');
+            roundsList.innerHTML = '';
+            state.roundScores.forEach((sc, i) => {
+                roundsList.innerHTML += `<div class="flex justify-between py-1 border-b border-slate-900"><span>Runde ${i+1}</span><span class="text-emerald-400 font-bold">+${sc.toFixed(2)}</span></div>`;
+            });
+
+            if (!state.highScores[state.mode] || state.totalScore > state.highScores[state.mode]) {
+                state.highScores[state.mode] = state.totalScore;
+                try { localStorage.setItem('dialed_nexus_hs_v5', JSON.stringify(state.highScores)); } catch (e) {}
+            }
+        }
+
+        document.getElementById('playAgainBtn').onclick = () => {
+            summaryModal.classList.add('hidden');
+            resetGame();
+            startRound();
+        };
+
+        document.getElementById('copyShareBtn').onclick = () => {
+            const text = `NEXUS LAB - ${MODES[state.mode].name}\nScore: ${state.totalScore.toFixed(2)} / 50 Punkte! 🧠⚡`;
+            try { navigator.clipboard.writeText(text).catch(() => {}); } catch (e) {}
+            document.getElementById('copyShareBtn').innerHTML = `<span class="">✔</span> Kopiert!`;
+            setTimeout(() => document.getElementById('copyShareBtn').innerHTML = `<span class="">🔗</span> Teilen`, 2000);
+        };
+
+        document.getElementById('statsModalBtn').onclick = openStatsModal;
+        document.getElementById('closeStatsBtn').onclick = () => statsModal.classList.add('hidden');
+
+        function openStatsModal() {
+            statsModal.classList.remove('hidden');
+            drawRadarChart();
+            const list = document.getElementById('statsList');
+            list.innerHTML = '';
+            Object.values(MODES).forEach(m => {
+                const hs = state.highScores[m.id] ? state.highScores[m.id].toFixed(2) : '0.00';
+                list.innerHTML += `
+                    <div class="flex items-center justify-between p-2 rounded-xl bg-slate-950/60 text-xs font-mono border border-slate-800">
+                        <span class="text-slate-300 flex items-center gap-2"><span>${m.icon}</span> ${m.name}</span>
+                        <span class="text-emerald-400 font-bold">${hs} / 50</span>
+                    </div>
+                `;
+            });
+        }
+
+        function drawRadarChart() {
+            const canvas = document.getElementById('radarChartCanvas');
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            const ctx = canvas.getContext('2d');
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            const radius = Math.min(cx, cy) - 30;
+
+            const axes = ['Visuell', 'Auditiv', 'Zeitgefühl', 'Räumlich', 'Kognitiv'];
+            const angles = axes.map((_, i) => (i * 2 * Math.PI) / axes.length - Math.PI / 2);
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 1;
+
+            for (let r = 0.2; r <= 1.0; r += 0.2) {
+                ctx.beginPath();
+                angles.forEach((angle, i) => {
+                    let x = cx + Math.cos(angle) * radius * r;
+                    let y = cy + Math.sin(angle) * radius * r;
+                    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                });
+                ctx.closePath();
+                ctx.stroke();
+            }
+
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '10px Space Grotesk';
+            angles.forEach((angle, i) => {
+                let x = cx + Math.cos(angle) * radius;
+                let y = cy + Math.sin(angle) * radius;
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.lineTo(x, y);
+                ctx.stroke();
+
+                let lx = cx + Math.cos(angle) * (radius + 18);
+                let ly = cy + Math.sin(angle) * (radius + 18);
+                ctx.textAlign = 'center';
+                ctx.fillText(axes[i], lx, ly);
+            });
+            const vals = axes.map(ax => { const ms = Object.values(MODES).filter(m => m.axis === ax); return Math.min(1, ms.reduce((a, m) => a + (state.highScores[m.id] || 0), 0) / (ms.length * 50)); });
+            ctx.beginPath();
+            vals.forEach((v, i) => { const x = cx + Math.cos(angles[i]) * radius * v, y = cy + Math.sin(angles[i]) * radius * v; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(168,85,247,0.35)'; ctx.fill();
+            ctx.strokeStyle = '#a855f7'; ctx.lineWidth = 2; ctx.stroke();
+        }
+
+        // --- Leise Arcade-Hintergrundmusik (synthetisch, keine Dateien) ---
+        const MUSIC_QUIET_MODES = ['sound', 'harmony', 'echo_gap', 'tempo'];
+        const music = {
+            on: true, started: false, step: 0, next: 0, master: null, noise: null, SD: 60 / 132 / 2,
+            chords: [
+                { b: 110.0, pad: [220.0, 261.63, 329.63] }, { b: 87.31, pad: [174.61, 220.0, 261.63] },
+                { b: 130.81, pad: [261.63, 329.63, 392.0] }, { b: 98.0, pad: [196.0, 246.94, 293.66] }
+            ],
+            mel: [[0, 659.25, 2], [2, 523.25, 1], [3, 587.33, 1], [4, 659.25, 2], [6, 880, 2],
+                  [8, 698.46, 2], [10, 880, 1], [11, 698.46, 1], [12, 523.25, 2], [14, 440, 2],
+                  [16, 659.25, 2], [18, 783.99, 1], [19, 659.25, 1], [20, 523.25, 2], [22, 659.25, 2],
+                  [24, 587.33, 2], [26, 493.88, 1], [27, 587.33, 1], [28, 783.99, 3]],
+            start() {
+                if (this.started) return;
+                audio.init();
+                const c = audio.ctx;
+                if (!c) return;
+                this.master = c.createGain();
+                this.master.gain.value = 0.05;
+                this.master.connect(c.destination);
+                this.noise = c.createBuffer(1, c.sampleRate * 0.5, c.sampleRate);
+                const d = this.noise.getChannelData(0);
+                for (let k = 0; k < d.length; k++) d[k] = Math.random() * 2 - 1;
+                this.started = true;
+                this.next = c.currentTime + 0.1;
+                setInterval(() => this.tick(), 100);
+            },
+            quiet() {
+                const inArena = hubView.classList.contains('hidden');
+                return !this.on || !audio.enabled || tuneS.open || (inArena && MUSIC_QUIET_MODES.includes(state.mode));
+            },
+            tick() {
+                const c = audio.ctx;
+                if (!c || !this.started) return;
+                if (this.next < c.currentTime - 0.1) this.next = c.currentTime;
+                const q = this.quiet();
+                while (this.next < c.currentTime + 0.3) {
+                    if (!q) this.note(this.step % 32, this.next);
+                    this.step++;
+                    this.next += this.SD;
+                }
+            },
+            tone(type, freq, t, dur, vol, att = 0.01, vib = false) {
+                const c = audio.ctx, o = c.createOscillator(), g = c.createGain();
+                o.type = type; o.frequency.value = freq;
+                g.gain.setValueAtTime(0.0001, t);
+                g.gain.linearRampToValueAtTime(vol, t + att);
+                g.gain.setValueAtTime(vol, t + Math.max(att, dur - 0.07));
+                g.gain.linearRampToValueAtTime(0.0001, t + dur);
+                if (vib) {
+                    const l = c.createOscillator(), lg = c.createGain();
+                    l.frequency.value = 5.5; lg.gain.value = freq * 0.008;
+                    l.connect(lg); lg.connect(o.frequency); l.start(t); l.stop(t + dur + 0.02);
+                }
+                o.connect(g); g.connect(this.master);
+                o.start(t); o.stop(t + dur + 0.02);
+            },
+            hit(t, dur, vol, hp) {
+                const c = audio.ctx, src = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+                src.buffer = this.noise; f.type = 'highpass'; f.frequency.value = hp;
+                g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+                src.connect(f); f.connect(g); g.connect(this.master);
+                src.start(t); src.stop(t + dur);
+            },
+            note(i, t) {
+                const sd = this.SD, ch = this.chords[Math.floor(i / 8)], p = i % 8;
+                if (p === 0) ch.pad.forEach(f => this.tone('triangle', f, t, sd * 8, 0.12, 0.15));
+                this.tone('triangle', p % 2 ? ch.b * 2 : ch.b, t, sd * 0.95, 0.55);
+                this.mel.forEach(([st, f, d]) => { if (st === i) this.tone('square', f, t, d * sd, 0.2, 0.02, true); });
+                if (p === 0 || p === 4) {
+                    const c = audio.ctx, o = c.createOscillator(), g = c.createGain();
+                    o.frequency.setValueAtTime(130, t); o.frequency.exponentialRampToValueAtTime(45, t + 0.12);
+                    g.gain.setValueAtTime(0.7, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.15);
+                    o.connect(g); g.connect(this.master); o.start(t); o.stop(t + 0.16);
+                }
+                if (p === 2 || p === 6) this.hit(t, 0.1, 0.3, 1500);
+                if (p % 2) this.hit(t, 0.04, 0.08, 7000);
+            }
+        };
+        let musicPref = true;
+        try { musicPref = localStorage.getItem('dn_music') !== 'off'; } catch (e) {}
+        music.on = musicPref;
+        const syncMusicIcon = () => { document.getElementById('musicIcon').textContent = music.on ? '🎵' : '🔇'; };
+        syncMusicIcon();
+        document.addEventListener('pointerdown', () => { if (!music.started) music.start(); }, { once: false });
+        document.getElementById('musicToggleBtn').onclick = () => {
+            music.on = !music.on;
+            try { localStorage.setItem('dn_music', music.on ? 'on' : 'off'); } catch (e) {}
+            syncMusicIcon();
+            if (music.on) music.start();
+        };
+
+        // --- ARCADE MINIGAMES ---
+        const AW = 360, AH = 480;
+        const ARCADE = {
+            snake: { id: 'snake', name: 'NEON SNAKE', icon: '🐍', color: 'emerald', desc: 'Fress Punkte, wachse, berühre dich nicht selbst. Pfeiltasten/WASD oder wischen.', make: () => makeSnake() },
+            breakout: { id: 'breakout', name: 'BRICK BREAKER', icon: '🧱', color: 'rose', desc: 'Zerstöre alle Steine. Maus/Finger bewegt den Schläger, Tippen startet den Ball.', make: () => makeBreakout() },
+            dodge: { id: 'dodge', name: 'METEOR DODGE', icon: '☄️', color: 'amber', desc: 'Weiche den Meteoren aus. Je länger du überlebst, desto mehr Punkte.', make: () => makeDodge() },
+            flap: { id: 'flap', name: 'FLAPPY NEXUS', icon: '🐦', color: 'cyan', desc: 'Tippe oder Leertaste zum Flattern. Fliege durch die Lücken.', make: () => makeFlap() },
+            atom: { id: 'atom', name: 'ATOM LAB', icon: '⚛️', color: 'purple', desc: 'Greife und wirf Atome, spanne Netze, baue Kristalle. Mit Tempo, Kraft, Schwerkraft und Anzahl zum Einstellen.', custom: true, open: () => openAtom() },
+            tune: { id: 'tune', name: 'TUNE TRAIL', icon: '🎵', color: 'rose', desc: 'Errate die Melodie: 6 Versuche, mit jedem Versuch wird der Ausschnitt länger. Bekannte Klassiker im Arcade-Sound.', custom: true, tag: 'Rätsel', open: () => openTune() }
+        };
+        const arc = { g: null, id: null, raf: 0, last: 0, score: 0, over: false, best: {} };
+        try { arc.best = JSON.parse(localStorage.getItem('dn_arcade') || '{}'); } catch (e) {}
+        const arcKeys = new Set();
+        const arView = document.getElementById('arcadeView'), arCv = document.getElementById('arCanvas'), arCtx = arCv.getContext('2d');
+        const arcClear = c => { c.fillStyle = '#0b1020'; c.fillRect(0, 0, AW, AH); };
+        const arcL = () => arcKeys.has('ArrowLeft') || arcKeys.has('a'), arcR = () => arcKeys.has('ArrowRight') || arcKeys.has('d');
+        function arcEnd() {
+            arc.over = true;
+            if (arc.score > (arc.best[arc.id] || 0)) { arc.best[arc.id] = arc.score; try { localStorage.setItem('dn_arcade', JSON.stringify(arc.best)); } catch (e) {} }
+        }
+        function launchArcade(id) {
+            if (ARCADE[id].custom) return ARCADE[id].open();
+            arc.id = id; arc.g = ARCADE[id].make(); arc.score = 0; arc.over = false; arc.last = performance.now();
+            document.getElementById('arTitle').textContent = ARCADE[id].icon + ' ' + ARCADE[id].name;
+            arView.style.display = 'flex';
+            if (!music.started) music.start();
+            cancelAnimationFrame(arc.raf); arc.raf = requestAnimationFrame(arcLoop);
+        }
+        function closeArcade() { cancelAnimationFrame(arc.raf); arView.style.display = 'none'; renderHub(); }
+        function arcLoop(now) {
+            const dt = Math.min(0.05, (now - arc.last) / 1000); arc.last = now;
+            if (!arc.over) arc.g.update(dt);
+            arc.g.draw(arCtx);
+            if (arc.over) {
+                arCtx.fillStyle = 'rgba(5,7,13,0.75)'; arCtx.fillRect(0, 0, AW, AH);
+                arCtx.fillStyle = '#fff'; arCtx.textAlign = 'center'; arCtx.font = 'bold 30px monospace';
+                arCtx.fillText('GAME OVER', AW / 2, AH / 2 - 20);
+                arCtx.font = '16px monospace'; arCtx.fillStyle = '#10b981'; arCtx.fillText('Score ' + arc.score, AW / 2, AH / 2 + 10);
+                arCtx.fillStyle = '#94a3b8'; arCtx.fillText('Tippen / Enter = Neustart', AW / 2, AH / 2 + 45);
+            }
+            document.getElementById('arScore').textContent = arc.score;
+            document.getElementById('arBest').textContent = Math.max(arc.score, arc.best[arc.id] || 0);
+            arc.raf = requestAnimationFrame(arcLoop);
+        }
+        const arcPt = e => { const r = arCv.getBoundingClientRect(); return [(e.clientX - r.left) * AW / r.width, (e.clientY - r.top) * AH / r.height]; };
+        arCv.addEventListener('pointerdown', e => { e.preventDefault(); if (arc.over) return launchArcade(arc.id); arc.g.pointer && arc.g.pointer(...arcPt(e), 'down'); });
+        arCv.addEventListener('pointermove', e => { if (!arc.over && e.buttons && arc.g.pointer) arc.g.pointer(...arcPt(e), 'move'); });
+        document.getElementById('arClose').onclick = closeArcade;
+        document.addEventListener('keyup', e => arcKeys.delete(e.key));
+        document.addEventListener('keydown', e => {
+            if (arView.style.display !== 'flex') return;
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) e.preventDefault();
+            if (e.key === 'Escape') return closeArcade();
+            arcKeys.add(e.key);
+            if (arc.over) { if (e.key === 'Enter' || e.key === ' ') launchArcade(arc.id); return; }
+            arc.g.key && arc.g.key(e.key);
+        });
+        function renderArcadeCards() {
+            Object.values(ARCADE).forEach(a => {
+                const card = document.createElement('div');
+                card.className = 'glass-card p-5 rounded-2xl flex flex-col justify-between cursor-pointer group relative overflow-hidden';
+                card.onclick = () => launchArcade(a.id);
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="w-10 h-10 rounded-xl bg-${a.color}-500/20 border border-${a.color}-500/30 flex items-center justify-center text-lg">${a.icon}</div>
+                            <span class="text-[10px] font-mono uppercase px-2 py-0.5 rounded-md border bg-emerald-500/20 text-emerald-300 border-emerald-500/30">🕹️ Arcade</span>
+                        </div>
+                        <h3 class="font-mono font-bold text-base text-white mb-1 group-hover:text-purple-400 transition">${a.name}</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed mb-4">${a.desc}</p>
+                    </div>
+                    <div class="flex items-center justify-between pt-3 border-t border-slate-800 text-xs font-mono">
+                        <span class="text-slate-500">${a.custom ? (a.tag || 'Sandbox') : 'Best: <b class="text-emerald-400">' + (arc.best[a.id] || 0) + '</b>'}</span>
+                        <span class="text-purple-400">Spielen →</span>
+                    </div>`;
+                gamesGrid.appendChild(card);
+            });
+        }
+
+        function makeSnake() {
+            const C = 18, R = 24, S = 20;
+            let body = [{ x: 9, y: 12 }, { x: 8, y: 12 }, { x: 7, y: 12 }], dir = { x: 1, y: 0 }, nd = { x: 1, y: 0 }, food, acc = 0, step = 0.13, sx = 0, sy = 0;
+            const place = () => { do { food = { x: Math.floor(Math.random() * C), y: Math.floor(Math.random() * R) }; } while (body.some(b => b.x === food.x && b.y === food.y)); };
+            const setDir = (x, y) => { if (x === -dir.x && y === -dir.y) return; nd = { x, y }; };
+            place();
+            return {
+                key(k) { const m = { ArrowUp: [0, -1], w: [0, -1], ArrowDown: [0, 1], s: [0, 1], ArrowLeft: [-1, 0], a: [-1, 0], ArrowRight: [1, 0], d: [1, 0] }[k]; if (m) setDir(...m); },
+                pointer(x, y, t) {
+                    if (t === 'down') { sx = x; sy = y; return; }
+                    const dx = x - sx, dy = y - sy;
+                    if (Math.max(Math.abs(dx), Math.abs(dy)) > 22) { Math.abs(dx) > Math.abs(dy) ? setDir(Math.sign(dx), 0) : setDir(0, Math.sign(dy)); sx = x; sy = y; }
+                },
+                update(dt) {
+                    acc += dt;
+                    while (acc >= step) {
+                        acc -= step; dir = nd;
+                        const h = { x: body[0].x + dir.x, y: body[0].y + dir.y };
+                        if (h.x < 0 || h.y < 0 || h.x >= C || h.y >= R || body.some(b => b.x === h.x && b.y === h.y)) return arcEnd();
+                        body.unshift(h);
+                        if (h.x === food.x && h.y === food.y) { arc.score += 10; step = Math.max(0.06, step - 0.003); place(); } else body.pop();
+                    }
+                },
+                draw(c) {
+                    arcClear(c);
+                    c.fillStyle = '#f43f5e'; c.beginPath(); c.arc(food.x * S + 10, food.y * S + 10, 7, 0, 7); c.fill();
+                    body.forEach((b, i) => { c.fillStyle = i ? '#10b981' : '#6ee7b7'; c.fillRect(b.x * S + 1, b.y * S + 1, S - 2, S - 2); });
+                }
+            };
+        }
+
+        function makeBreakout() {
+            let px = AW / 2, pw = 70, lives = 3, level = 1, ball, bricks;
+            const reset = () => { ball = { x: px, y: AH - 44, vx: 150 * (Math.random() < 0.5 ? -1 : 1), vy: -240 - level * 15, stuck: true }; };
+            const build = () => { bricks = []; for (let r = 0; r < 5; r++) for (let k = 0; k < 7; k++) bricks.push({ x: 10 + k * 48, y: 50 + r * 22, w: 44, h: 18, r }); };
+            build(); reset();
+            return {
+                pointer(x, y, t) { px = x; if (t === 'down') ball.stuck = false; },
+                key(k) { if (k === ' ' || k === 'ArrowUp') ball.stuck = false; },
+                update(dt) {
+                    if (arcL()) px -= 320 * dt; if (arcR()) px += 320 * dt;
+                    px = Math.max(pw / 2, Math.min(AW - pw / 2, px));
+                    if (ball.stuck) { ball.x = px; ball.y = AH - 44; return; }
+                    ball.x += ball.vx * dt; ball.y += ball.vy * dt;
+                    if (ball.x < 8) { ball.x = 8; ball.vx = Math.abs(ball.vx); }
+                    if (ball.x > AW - 8) { ball.x = AW - 8; ball.vx = -Math.abs(ball.vx); }
+                    if (ball.y < 8) { ball.y = 8; ball.vy = Math.abs(ball.vy); }
+                    if (ball.vy > 0 && ball.y > AH - 48 && ball.y < AH - 28 && Math.abs(ball.x - px) < pw / 2 + 6) { ball.vy = -Math.abs(ball.vy); ball.vx = (ball.x - px) / (pw / 2) * 260; }
+                    for (const b of bricks) {
+                        if (ball.x > b.x - 6 && ball.x < b.x + b.w + 6 && ball.y > b.y - 6 && ball.y < b.y + b.h + 6) { b.dead = true; ball.vy = -ball.vy; arc.score += 10 * (5 - b.r); break; }
+                    }
+                    bricks = bricks.filter(b => !b.dead);
+                    if (!bricks.length) { level++; build(); reset(); }
+                    if (ball.y > AH + 10) { lives--; if (lives <= 0) return arcEnd(); reset(); }
+                },
+                draw(c) {
+                    arcClear(c);
+                    bricks.forEach(b => { c.fillStyle = `hsl(${340 - b.r * 45},80%,60%)`; c.fillRect(b.x, b.y, b.w, b.h); });
+                    c.fillStyle = '#06b6d4'; c.fillRect(px - pw / 2, AH - 36, pw, 10);
+                    c.fillStyle = '#fff'; c.beginPath(); c.arc(ball.x, ball.y, 6, 0, 7); c.fill();
+                    c.fillStyle = '#94a3b8'; c.font = '12px monospace'; c.textAlign = 'left'; c.fillText('♥'.repeat(lives) + '  Level ' + level, 10, AH - 8);
+                    if (ball.stuck) { c.textAlign = 'center'; c.fillText('Tippen / Leertaste = Start', AW / 2, AH / 2 + 60); }
+                }
+            };
+        }
+
+        function makeDodge() {
+            let px = AW / 2, rocks = [], t = 0, spawn = 0;
+            return {
+                pointer(x) { px = x; },
+                update(dt) {
+                    t += dt; arc.score = Math.floor(t * 10);
+                    if (arcL()) px -= 300 * dt; if (arcR()) px += 300 * dt;
+                    px = Math.max(14, Math.min(AW - 14, px));
+                    spawn -= dt;
+                    if (spawn <= 0) { spawn = Math.max(0.18, 0.7 - t * 0.01); rocks.push({ x: Math.random() * AW, y: -20, r: 10 + Math.random() * 14, v: 120 + Math.random() * 90 + t * 4 }); }
+                    for (const r of rocks) { r.y += r.v * dt; if (Math.hypot(r.x - px, r.y - (AH - 50)) < r.r + 10) return arcEnd(); }
+                    rocks = rocks.filter(r => r.y < AH + 30);
+                },
+                draw(c) {
+                    arcClear(c);
+                    rocks.forEach(r => { c.fillStyle = '#94a3b8'; c.beginPath(); c.arc(r.x, r.y, r.r, 0, 7); c.fill(); c.fillStyle = '#64748b'; c.beginPath(); c.arc(r.x - r.r / 3, r.y - r.r / 3, r.r / 3, 0, 7); c.fill(); });
+                    c.fillStyle = '#06b6d4'; c.beginPath(); c.moveTo(px, AH - 66); c.lineTo(px - 13, AH - 38); c.lineTo(px + 13, AH - 38); c.closePath(); c.fill();
+                }
+            };
+        }
+
+        function makeFlap() {
+            let y = AH / 2, v = 0, started = false, pipes = [];
+            const flap = () => { v = -300; started = true; };
+            const mk = x => ({ x, gap: 150, top: 80 + Math.random() * (AH - 310), passed: false });
+            pipes = [mk(AW + 60), mk(AW + 250)];
+            return {
+                pointer(x, yy, t) { if (t === 'down') flap(); },
+                key(k) { if (k === ' ' || k === 'ArrowUp' || k === 'w') flap(); },
+                update(dt) {
+                    if (!started) return;
+                    v += 900 * dt; y += v * dt;
+                    for (const p of pipes) {
+                        p.x -= 120 * dt;
+                        if (!p.passed && p.x + 50 < 68) { p.passed = true; arc.score++; }
+                        if (92 > p.x && 68 < p.x + 50 && (y - 12 < p.top || y + 12 > p.top + p.gap)) return arcEnd();
+                    }
+                    if (pipes[0].x < -60) { pipes.shift(); pipes.push(mk(pipes[pipes.length - 1].x + 190)); }
+                    if (y > AH - 12 || y < -20) arcEnd();
+                },
+                draw(c) {
+                    arcClear(c);
+                    pipes.forEach(p => { c.fillStyle = '#10b981'; c.fillRect(p.x, 0, 50, p.top); c.fillRect(p.x, p.top + p.gap, 50, AH); });
+                    c.fillStyle = '#facc15'; c.beginPath(); c.arc(80, y, 12, 0, 7); c.fill();
+                    c.fillStyle = '#0b1020'; c.beginPath(); c.arc(84, y - 3, 2.5, 0, 7); c.fill();
+                    if (!started) { c.fillStyle = '#94a3b8'; c.font = '14px monospace'; c.textAlign = 'center'; c.fillText('Tippen zum Start', AW / 2, AH / 2 + 50); }
+                }
+            };
+        }
+
+        // --- ATOM LAB ---
+        const atomView = document.getElementById('atomView'), atomCv = document.getElementById('atomCanvas'), atomCtx = atomCv.getContext('2d');
+        const atomS = { atoms: [], rings: [], W: 0, H: 0, raf: 0, last: 0, t: 0, bonds: true, mode: 'gas', grav: false, speed: 1, force: 1, links: [], lastBlip: 0, P: { x: 0, y: 0, vx: 0, vy: 0, in: false, down: false, grab: null, t: 0, mt: 0 } };
+        function atomMake(x, y) {
+            const r = 4 + Math.random() * 5;
+            return { x, y, vx: (Math.random() - 0.5) * 80, vy: (Math.random() - 0.5) * 80, r, h: 190 + (r - 4) * 28, e: Math.max(1, Math.round((r - 3) / 2)),
+                     ph: Math.random() * 6.28, tilt: Math.random() * 3.14, spin: (Math.random() - 0.5) * 1.2, dir: Math.random() < 0.5 ? 1 : -1 };
+        }
+        function atomResize() {
+            const d = Math.min(2, window.devicePixelRatio || 1);
+            atomS.W = window.innerWidth; atomS.H = window.innerHeight;
+            atomCv.width = atomS.W * d; atomCv.height = atomS.H * d;
+            atomCtx.setTransform(d, 0, 0, d, 0, 0);
+            atomCtx.fillStyle = '#05070d'; atomCtx.fillRect(0, 0, atomS.W, atomS.H);
+        }
+        function atomSeed(n) { for (let i = 0; i < n; i++) atomS.atoms.push(atomMake(Math.random() * atomS.W, Math.random() * atomS.H)); }
+        function atomBlip(r) {
+            const now = performance.now();
+            if (now - atomS.lastBlip < 80 || !audio.enabled || !audio.ctx) return;
+            atomS.lastBlip = now;
+            const c = audio.ctx, o = c.createOscillator(), g = c.createGain(), t0 = c.currentTime, sc = [0, 2, 4, 7, 9];
+            const k = Math.floor(r * 3);
+            o.type = 'sine'; o.frequency.value = 261.63 * Math.pow(2, (sc[k % 5] + 12 * (k % 2)) / 12);
+            g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.035, t0 + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.35);
+            o.connect(g); g.connect(c.destination); o.start(t0); o.stop(t0 + 0.4);
+        }
+        function openAtom() {
+            audio.init();
+            atomView.style.display = 'block';
+            atomResize();
+            if (!atomS.atoms.length) atomSeed(atomS.W < 600 ? 50 : 90);
+            document.getElementById('atomCount').value = atomS.atoms.length; document.getElementById('atomCountV').textContent = atomS.atoms.length;
+            atomS.last = performance.now();
+            cancelAnimationFrame(atomS.raf); atomS.raf = requestAnimationFrame(atomLoop);
+        }
+        function closeAtom() { cancelAnimationFrame(atomS.raf); atomView.style.display = 'none'; }
+        function atomLoop(now) {
+            const dt = Math.min(0.033, (now - atomS.last) / 1000) * atomS.speed; atomS.last = now; atomS.t += dt;
+            atomStep(dt); atomDraw();
+            atomS.raf = requestAnimationFrame(atomLoop);
+        }
+        function atomStep(dt) {
+            const { atoms: A, P, W, H } = atomS, R = 150, F = atomS.force, gas = atomS.mode === 'gas';
+            atomS.bondList = [];
+            for (let i = 0; i < A.length; i++) {
+                const a = A[i];
+                if (P.in && !P.grab) {
+                    const dx = a.x - P.x, dy = a.y - P.y, d = Math.hypot(dx, dy);
+                    if (d < R && d > 0.1) {
+                        const k = (1 - d / R) * F;
+                        if (P.down) { a.vx += (-dx / d * 620 - dy / d * 420) * k * dt; a.vy += (-dy / d * 620 + dx / d * 420) * k * dt; }
+                        else { a.vx += dx / d * 900 * k * k * dt + P.vx * 2 * k * dt; a.vy += dy / d * 900 * k * k * dt + P.vy * 2 * k * dt; }
+                    }
+                }
+                for (let j = i + 1; j < A.length; j++) {
+                    const b = A[j], dx = b.x - a.x, dy = b.y - a.y, d2 = dx * dx + dy * dy;
+                    if (d2 > 12100 || d2 < 0.01) continue;
+                    const d = Math.sqrt(d2), ux = dx / d, uy = dy / d, rest = (gas ? 52 : 26) + (a.r + b.r) * 1.5;
+                    const f = d < rest ? (rest - d) / rest * 260 : (gas ? -(d - rest) / (110 - rest) * 18 : 0);
+                    a.vx -= ux * f * dt; a.vy -= uy * f * dt; b.vx += ux * f * dt; b.vy += uy * f * dt;
+                    if (gas) atomS.bondList.push(a, b, 1 - d / 110);
+                    if (d < a.r + b.r + 10 && Math.hypot(a.vx - b.vx, a.vy - b.vy) > 150 && atomS.rings.length < 40) {
+                        atomS.rings.push({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, r: 6, life: 1, h: a.h });
+                        atomBlip(a.r);
+                    }
+                }
+            }
+            if (atomS.mode === 'net') {
+                atomS.links = atomS.links.filter(l => {
+                    const [a, b, rest] = l, dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 0.01;
+                    if (d > rest * 3.2) { atomS.rings.length < 40 && atomS.rings.push({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, r: 4, life: 1, h: 330 }); atomBlip(a.r); return false; }
+                    const f = Math.max(-400, Math.min(400, (d - rest) * 60 * F));
+                    a.vx += dx / d * f * dt; a.vy += dy / d * f * dt; b.vx -= dx / d * f * dt; b.vy -= dy / d * f * dt;
+                    return true;
+                });
+            }
+            if (atomS.mode === 'crystal') for (const a of A) { a.vx += (a.hx - a.x) * 40 * F * dt; a.vy += (a.hy - a.y) * 40 * F * dt; }
+            if (atomS.grav) for (const a of A) a.vy += 300 * dt;
+            if (P.grab) { P.grab.vx = (P.x - P.grab.x) * 14; P.grab.vy = (P.y - P.grab.y) * 14; }
+            const damp = Math.pow(atomS.grav ? 0.65 : (gas ? 0.4 : atomS.mode === 'net' ? 0.3 : 0.12), dt), jig = gas ? 30 : 4;
+            for (const a of A) {
+                a.vx = (a.vx + (Math.random() - 0.5) * jig * dt) * damp; a.vy = (a.vy + (Math.random() - 0.5) * jig * dt) * damp;
+                const sp = Math.hypot(a.vx, a.vy); if (sp > 480) { a.vx *= 480 / sp; a.vy *= 480 / sp; }
+                a.x += a.vx * dt; a.y += a.vy * dt; a.tilt += a.spin * dt;
+                if (a.x < 10) { a.x = 10; a.vx = Math.abs(a.vx) * 0.8; } if (a.x > W - 10) { a.x = W - 10; a.vx = -Math.abs(a.vx) * 0.8; }
+                if (a.y < 10) { a.y = 10; a.vy = Math.abs(a.vy) * 0.8; } if (a.y > H - 10) { a.y = H - 10; a.vy = -Math.abs(a.vy) * 0.8; }
+            }
+            for (const r of atomS.rings) { r.r += 160 * dt; r.life -= dt * 1.6; }
+            atomS.rings = atomS.rings.filter(r => r.life > 0);
+            P.vx *= 0.85; P.vy *= 0.85;
+        }
+        function atomDraw() {
+            const c = atomCtx, { atoms: A, W, H, t } = atomS;
+            c.globalCompositeOperation = 'source-over'; c.fillStyle = 'rgba(5,7,13,0.2)'; c.fillRect(0, 0, W, H);
+            c.globalCompositeOperation = 'lighter';
+            if (atomS.bonds) { c.lineWidth = 1; const bl = atomS.bondList; for (let i = 0; i < bl.length; i += 3) { c.strokeStyle = `rgba(120,190,255,${bl[i + 2] * 0.35})`; c.beginPath(); c.moveTo(bl[i].x, bl[i].y); c.lineTo(bl[i + 1].x, bl[i + 1].y); c.stroke(); } }
+            if (atomS.mode !== 'gas') for (const l of atomS.links) {
+                const d = Math.hypot(l[1].x - l[0].x, l[1].y - l[0].y), st = Math.min(1, Math.abs(d - l[2]) / l[2]);
+                c.strokeStyle = `hsla(${190 + st * 140},100%,70%,${0.3 + st * 0.5})`; c.lineWidth = atomS.mode === 'net' ? 1.6 : 1;
+                c.beginPath(); c.moveTo(l[0].x, l[0].y); c.lineTo(l[1].x, l[1].y); c.stroke();
+            }
+            c.lineWidth = 2;
+            for (const r of atomS.rings) { c.strokeStyle = `hsla(${r.h},100%,70%,${r.life * 0.5})`; c.beginPath(); c.arc(r.x, r.y, r.r, 0, 6.283); c.stroke(); }
+            if (atomS.P.in) { const g = c.createRadialGradient(atomS.P.x, atomS.P.y, 0, atomS.P.x, atomS.P.y, 150); g.addColorStop(0, atomS.P.down ? 'rgba(168,85,247,0.18)' : 'rgba(6,182,212,0.10)'); g.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = g; c.beginPath(); c.arc(atomS.P.x, atomS.P.y, 150, 0, 6.283); c.fill(); }
+            for (const a of A) {
+                const g = c.createRadialGradient(a.x, a.y, 0, a.x, a.y, a.r * 3.2);
+                g.addColorStop(0, `hsla(${a.h},100%,75%,0.95)`); g.addColorStop(0.35, `hsla(${a.h},100%,60%,0.5)`); g.addColorStop(1, `hsla(${a.h},100%,50%,0)`);
+                c.fillStyle = g; c.beginPath(); c.arc(a.x, a.y, a.r * 3.2, 0, 6.283); c.fill();
+                c.fillStyle = 'rgba(255,255,255,0.9)'; c.beginPath(); c.arc(a.x, a.y, a.r * 0.45, 0, 6.283); c.fill();
+                c.save(); c.translate(a.x, a.y); c.rotate(a.tilt);
+                for (let k = 0; k < a.e; k++) {
+                    const ro = a.r * 2.4 + k * 8, ang = a.ph + t * (2.2 + k * 0.9) * a.dir;
+                    c.strokeStyle = `hsla(${a.h},100%,70%,0.18)`; c.lineWidth = 1; c.beginPath(); c.ellipse(0, 0, ro, ro * 0.45, 0, 0, 6.283); c.stroke();
+                    c.fillStyle = `hsla(${a.h},100%,88%,0.95)`; c.beginPath(); c.arc(Math.cos(ang) * ro, Math.sin(ang) * ro * 0.45, 1.9, 0, 6.283); c.fill();
+                }
+                c.restore();
+            }
+            const gb = atomS.P.grab;
+            if (gb) { c.strokeStyle = 'rgba(255,255,255,0.85)'; c.lineWidth = 1.5; c.beginPath(); c.arc(gb.x, gb.y, gb.r * 3.6, 0, 6.283); c.stroke(); }
+        }
+        atomCv.addEventListener('pointermove', e => {
+            const P = atomS.P, now = performance.now(), dtm = Math.max(8, now - P.mt) / 1000;
+            P.vx = P.vx * 0.6 + ((e.clientX - P.x) / dtm) * 0.4; P.vy = P.vy * 0.6 + ((e.clientY - P.y) / dtm) * 0.4;
+            P.x = e.clientX; P.y = e.clientY; P.in = true; P.mt = now;
+        });
+        atomCv.addEventListener('pointerdown', e => {
+            const P = atomS.P; P.x = e.clientX; P.y = e.clientY; P.in = true; P.down = true; P.t = performance.now(); P.mt = P.t;
+            let best = null, bd = 1e9;
+            for (const a of atomS.atoms) { const d = Math.hypot(a.x - P.x, a.y - P.y); if (d < a.r * 3 + 16 && d < bd) { best = a; bd = d; } }
+            P.grab = best;
+        });
+        atomCv.addEventListener('pointerup', e => {
+            const P = atomS.P; P.down = false; const hadGrab = P.grab; P.grab = null;
+            if (!hadGrab && performance.now() - P.t < 220 && atomS.atoms.length < 300) { const a = atomMake(e.clientX, e.clientY); atomS.atoms.push(a); atomS.rings.push({ x: a.x, y: a.y, r: 6, life: 1, h: a.h }); atomBlip(a.r); }
+            if (e.pointerType !== 'mouse') P.in = false;
+        });
+        atomCv.addEventListener('pointerleave', () => { atomS.P.in = false; atomS.P.down = false; atomS.P.grab = null; });
+        document.getElementById('atomClose').onclick = closeAtom;
+        const $a = id => document.getElementById(id);
+        function atomUI() { ['gas', 'net', 'crystal'].forEach(m => $a('atomMode' + m).classList.toggle('text-cyan-300', atomS.mode === m)); }
+        function atomSetMode(m) { atomS.mode = m; atomS.links = []; if (m === 'net') atomBuildNet(); if (m === 'crystal') atomBuildCrystal(); atomUI(); }
+        function atomBuildNet() {
+            const A = atomS.atoms, L = [], seen = new Set();
+            A.forEach((a, i) => a._i = i);
+            A.forEach(a => {
+                A.filter(b => b !== a).map(b => [Math.hypot(a.x - b.x, a.y - b.y), b]).sort((x, y) => x[0] - y[0]).slice(0, 3).forEach(([d, b]) => {
+                    if (d > 190) return;
+                    const key = a._i < b._i ? a._i + '|' + b._i : b._i + '|' + a._i;
+                    if (seen.has(key)) return;
+                    seen.add(key); L.push([a, b, d * 0.8]);
+                });
+            });
+            atomS.links = L;
+        }
+        function atomBuildCrystal() {
+            const A = atomS.atoms, n = A.length, W = atomS.W, H = atomS.H;
+            const sp = Math.max(34, Math.sqrt((W * (H - 170) * 0.85) / (n * 0.866))), rh = sp * 0.866, homes = [];
+            for (let r = 0, y = 70; y < H - 110; y += rh, r++) for (let x = (r % 2 ? sp : sp / 2); x < W - sp / 2; x += sp) homes.push({ x, y });
+            homes.sort((p, q) => Math.hypot(p.x - W / 2, p.y - H / 2) - Math.hypot(q.x - W / 2, q.y - H / 2));
+            const hs = homes.slice(0, n), cmp = (p, q) => (Math.round(p.y / rh) - Math.round(q.y / rh)) || (p.x - q.x);
+            hs.sort(cmp); A.sort(cmp);
+            A.forEach((a, i) => { a.hx = hs[i] ? hs[i].x : a.x; a.hy = hs[i] ? hs[i].y : a.y; });
+            const L = [];
+            for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) if (Math.hypot(A[i].hx - A[j].hx, A[i].hy - A[j].hy) < sp * 1.2) L.push([A[i], A[j], sp]);
+            atomS.links = L;
+        }
+        ['gas', 'net', 'crystal'].forEach(m => $a('atomMode' + m).onclick = () => atomSetMode(m));
+        $a('atomGrav').onclick = e => { atomS.grav = !atomS.grav; e.currentTarget.textContent = atomS.grav ? '🌍 Schwerkraft an' : '🌍 Schwerkraft aus'; };
+        $a('atomCount').oninput = e => {
+            const n = +e.target.value;
+            while (atomS.atoms.length < n) atomS.atoms.push(atomMake(Math.random() * atomS.W, Math.random() * atomS.H));
+            if (atomS.atoms.length > n) atomS.atoms.length = n;
+            $a('atomCountV').textContent = n;
+            if (atomS.mode !== 'gas') atomSetMode(atomS.mode);
+        };
+        $a('atomSpeed').oninput = e => { atomS.speed = +e.target.value; $a('atomSpeedV').textContent = atomS.speed.toFixed(1) + '×'; };
+        $a('atomForce').oninput = e => { atomS.force = +e.target.value; $a('atomForceV').textContent = atomS.force.toFixed(1) + '×'; };
+        atomUI();
+        document.getElementById('atomReset').onclick = () => { atomS.atoms = []; atomSeed(+document.getElementById('atomCount').value); atomSetMode(atomS.mode); };
+        document.getElementById('atomBondBtn').onclick = e => { atomS.bonds = !atomS.bonds; e.currentTarget.textContent = atomS.bonds ? '🔗 Bindungen an' : '🔗 Bindungen aus'; };
+        window.addEventListener('resize', () => { if (atomView.style.display === 'block') atomResize(); });
+        document.addEventListener('keydown', e => { if (e.key === 'Escape' && atomView.style.display === 'block') closeAtom(); });
+
+        // --- TUNE TRAIL (Melodie-Rätsel mit gemeinfreien Melodien) ---
+        const NN = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+        const seq = str => str.split(' ').map(tok => {
+            const [n, d] = tok.split(':'), dur = parseFloat(d);
+            if (n === 'R') return [null, dur];
+            const m = n.match(/^([A-G])([#b]?)(\d)$/);
+            return [12 * (parseInt(m[3]) + 1) + NN[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0), dur];
+        });
+        const TUNES = [
+            { t: 'Ode an die Freude', a: ['freude schöner götterfunken', 'beethoven 9', 'ode to joy'], bpm: 112, n: seq('E4:1 E4:1 F4:1 G4:1 G4:1 F4:1 E4:1 D4:1 C4:1 C4:1 D4:1 E4:1 E4:1.5 D4:.5 D4:2 E4:1 E4:1 F4:1 G4:1 G4:1 F4:1 E4:1 D4:1 C4:1 C4:1 D4:1 E4:1 D4:1.5 C4:.5 C4:2') },
+            { t: 'Alle meine Entchen', a: [], bpm: 100, n: seq('C4:1 D4:1 E4:1 F4:1 G4:2 G4:2 A4:1 A4:1 A4:1 A4:1 G4:4 A4:1 A4:1 A4:1 A4:1 G4:4 F4:1 F4:1 F4:1 F4:1 E4:2 E4:2 D4:1 D4:1 D4:1 D4:1 C4:4') },
+            { t: 'Hänschen klein', a: ['haenschen klein'], bpm: 100, n: seq('G4:1 E4:1 E4:2 F4:1 D4:1 D4:2 C4:1 D4:1 E4:1 F4:1 G4:1 G4:1 G4:2') },
+            { t: 'Happy Birthday', a: ['zum geburtstag viel glück', 'happy birthday to you'], bpm: 100, n: seq('G4:.75 G4:.25 A4:1 G4:1 C5:1 B4:2 G4:.75 G4:.25 A4:1 G4:1 D5:1 C5:2 G4:.75 G4:.25 G5:1 E5:1 C5:1 B4:1 A4:1 F5:.75 F5:.25 E5:1 C5:1 D5:1 C5:2') },
+            { t: 'Für Elise', a: ['fuer elise', 'beethoven'], bpm: 120, n: seq('E5:.5 D#5:.5 E5:.5 D#5:.5 E5:.5 B4:.5 D5:.5 C5:.5 A4:1.5 R:.5 C4:.5 E4:.5 A4:.5 B4:1.5 R:.5 E4:.5 G#4:.5 B4:.5 C5:1.5') },
+            { t: 'Morgen kommt der Weihnachtsmann', a: ['twinkle twinkle little star', 'twinkle twinkle', 'ah vous dirai-je maman'], bpm: 100, n: seq('C4:1 C4:1 G4:1 G4:1 A4:1 A4:1 G4:2 F4:1 F4:1 E4:1 E4:1 D4:1 D4:1 C4:2 G4:1 G4:1 F4:1 F4:1 E4:1 E4:1 D4:2 G4:1 G4:1 F4:1 F4:1 E4:1 E4:1 D4:2 C4:1 C4:1 G4:1 G4:1 A4:1 A4:1 G4:2 F4:1 F4:1 E4:1 E4:1 D4:1 D4:1 C4:2') },
+            { t: 'Bruder Jakob', a: ['frère jacques', 'frere jacques'], bpm: 110, n: seq('C4:1 D4:1 E4:1 C4:1 C4:1 D4:1 E4:1 C4:1 E4:1 F4:1 G4:2 E4:1 F4:1 G4:2 G4:.5 A4:.5 G4:.5 F4:.5 E4:1 C4:1 G4:.5 A4:.5 G4:.5 F4:.5 E4:1 C4:1 C4:1 G3:1 C4:2 C4:1 G3:1 C4:2') },
+            { t: 'Schicksalssinfonie (Beethoven 5.)', a: ['beethoven 5', '5. sinfonie', 'fünfte sinfonie', 'schicksalssinfonie'], bpm: 110, n: seq('R:.5 G4:.5 G4:.5 G4:.5 Eb4:3 R:.5 F4:.5 F4:.5 F4:.5 D4:3') },
+            { t: 'Stille Nacht', a: ['stille nacht heilige nacht', 'silent night'], bpm: 80, n: seq('G4:1.5 A4:.5 G4:1 E4:3 G4:1.5 A4:.5 G4:1 E4:3 D5:2 D5:1 B4:3 C5:2 C5:1 G4:3') },
+            { t: 'Jingle Bells', a: [], bpm: 130, n: seq('E4:1 E4:1 E4:2 E4:1 E4:1 E4:2 E4:1 G4:1 C4:1.5 D4:.5 E4:4 F4:1 F4:1 F4:1.5 F4:.5 F4:1 E4:1 E4:1 E4:.5 E4:.5 D4:1 D4:1 E4:1 D4:2 G4:2') },
+            { t: 'Row, Row, Row Your Boat', a: ['row row row your boat', 'row your boat'], bpm: 120, n: seq('C4:1.5 C4:1.5 C4:1 D4:.5 E4:1.5 E4:1 D4:.5 E4:1 F4:.5 G4:3 C5:.5 C5:.5 C5:.5 G4:.5 G4:.5 G4:.5 E4:.5 E4:.5 E4:.5 C4:.5 C4:.5 C4:.5 G4:1 F4:.5 E4:1 D4:.5 C4:3') },
+            { t: 'When the Saints Go Marching In', a: ['oh when the saints', 'when the saints'], bpm: 120, n: seq('C4:.5 E4:.5 F4:.5 G4:2.5 C4:.5 E4:.5 F4:.5 G4:2.5 C4:.5 E4:.5 F4:.5 G4:1 E4:1 C4:1 E4:1 D4:3') },
+            { t: 'Kanon in D (Pachelbel)', a: ['pachelbel', 'canon in d', 'kanon'], bpm: 90, n: seq('F#5:2 E5:2 D5:2 C#5:2 B4:2 A4:2 B4:2 C#5:2 F#5:2 E5:2 D5:2 C#5:2 B4:2 A4:2 B4:2 C#5:2') },
+            { t: 'Menuett in G', a: ['menuett g', 'minuet in g', 'bach menuett'], bpm: 120, n: seq('D5:1 G4:.5 A4:.5 B4:.5 C5:.5 D5:1 G4:1 G4:1 E5:1 C5:.5 D5:.5 E5:.5 F#5:.5 G5:1 G4:1 G4:1') }
+        ];
+        const TUNE_LEN = [1, 2, 4, 7, 11, 16];
+        const tuneS = { open: false, song: null, tries: 0, over: false, win: false, hist: [], used: [], raf: 0, nodes: [], stats: { wins: 0, played: 0, streak: 0, best: 0 } };
+        try { Object.assign(tuneS.stats, JSON.parse(localStorage.getItem('dn_tune') || '{}')); } catch (e) {}
+        const $t = id => document.getElementById(id);
+        const tuneNorm = x => x.toLowerCase().replace(/[.,!?'’]/g, '').trim();
+        function tuneStop() {
+            cancelAnimationFrame(tuneS.raf);
+            tuneS.nodes.forEach(o => { try { o.stop(); } catch (e) {} });
+            tuneS.nodes = []; $t('tuneBar').style.width = '0';
+        }
+        function tunePlay(limit) {
+            audio.init(); const c = audio.ctx; if (!c) return;
+            tuneStop();
+            const song = tuneS.song, spb = 60 / song.bpm, t0 = c.currentTime + 0.05;
+            let off = 0, end = 0;
+            for (const [m, d] of song.n) {
+                const st = off * spb, dur = Math.min(d * spb, limit - st);
+                off += d;
+                if (st >= limit) break;
+                end = st + Math.max(0, dur);
+                if (m === null) continue;
+                const f = 440 * Math.pow(2, (m - 69) / 12), g = c.createGain(), o1 = c.createOscillator(), o2 = c.createOscillator();
+                o1.type = 'triangle'; o2.type = 'square'; o1.frequency.value = f; o2.frequency.value = f;
+                const gv = c.createGain(); gv.gain.value = 0.18; o2.connect(gv); gv.connect(g); o1.connect(g);
+                const len = Math.max(0.12, dur * 0.95);
+                g.gain.setValueAtTime(0.0001, t0 + st); g.gain.exponentialRampToValueAtTime(0.28, t0 + st + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t0 + st + len);
+                g.connect(c.destination);
+                o1.start(t0 + st); o2.start(t0 + st); o1.stop(t0 + st + len + 0.02); o2.stop(t0 + st + len + 0.02);
+                tuneS.nodes.push(o1, o2);
+            }
+            const start = performance.now(), total = Math.max(0.3, Math.min(limit, end)) * 1000;
+            const loop = () => { const p = Math.min(1, (performance.now() - start) / total); $t('tuneBar').style.width = (p * 100) + '%'; if (p < 1) tuneS.raf = requestAnimationFrame(loop); };
+            tuneS.raf = requestAnimationFrame(loop);
+        }
+        function tuneRender() {
+            const T = tuneS, st = T.stats;
+            $t('tuneStats').textContent = `Serie ${st.streak} · Bester ${st.best} · Gelöst ${st.wins}/${st.played}`;
+            $t('tuneSegs').innerHTML = TUNE_LEN.map((l, i) => {
+                const cls = T.win && i === T.hist.length - 1 ? 'bg-emerald-500' : i < T.hist.length ? 'bg-rose-500/70' : (i === T.tries && !T.over ? 'bg-purple-400' : 'bg-slate-800');
+                return `<div class="flex-1 h-2 rounded ${cls}"></div>`;
+            }).join('');
+            $t('tunePlay').textContent = T.over ? '▶ Ganzen Song hören' : `▶ Abspielen (${TUNE_LEN[T.tries]} s)`;
+            $t('tuneHist').innerHTML = T.hist.map(h => `<div class="px-3 py-2 rounded-lg ${h.ok ? 'bg-emerald-500/20 text-emerald-200' : 'bg-slate-900 text-slate-400'}">${h.ok ? '✅' : h.skip ? '⏭' : '❌'} ${h.t}</div>`).join('');
+            $t('tuneGuessBox').style.display = T.over ? 'none' : 'flex';
+            $t('tuneNext').style.display = T.over ? 'block' : 'none';
+            $t('tuneMsg').textContent = T.over ? (T.win ? `🎉 Richtig in Versuch ${T.hist.length}: ${T.song.t}` : `😅 Es war: ${T.song.t}`) : '';
+        }
+        function tuneNew() {
+            tuneStop();
+            if (tuneS.used.length >= TUNES.length) tuneS.used = [];
+            const pool = TUNES.filter(s => !tuneS.used.includes(s)), song = pool[Math.floor(Math.random() * pool.length)];
+            Object.assign(tuneS, { song, tries: 0, over: false, win: false, hist: [] });
+            tuneS.used.push(song);
+            $t('tuneInput').value = ''; $t('tuneSug').innerHTML = '';
+            tuneRender();
+        }
+        function tuneEnd(win) {
+            const st = tuneS.stats; tuneS.over = true; tuneS.win = win; st.played++;
+            if (win) { st.wins++; st.streak++; st.best = Math.max(st.best, st.streak); } else st.streak = 0;
+            try { localStorage.setItem('dn_tune', JSON.stringify(st)); } catch (e) {}
+        }
+        function tuneGuess(song) {
+            if (tuneS.over) return;
+            const ok = song === tuneS.song;
+            tuneS.hist.push({ t: song ? song.t : '— übersprungen —', ok, skip: !song });
+            if (ok) tuneEnd(true); else if (tuneS.hist.length >= TUNE_LEN.length) tuneEnd(false); else tuneS.tries++;
+            tuneStop(); $t('tuneInput').value = ''; $t('tuneSug').innerHTML = ''; tuneRender();
+        }
+        function tuneSuggest() {
+            const q = tuneNorm($t('tuneInput').value);
+            if (!q) { $t('tuneSug').innerHTML = ''; return; }
+            const hits = TUNES.filter(s => tuneNorm(s.t).includes(q) || s.a.some(a => tuneNorm(a).includes(q))).slice(0, 6);
+            $t('tuneSug').innerHTML = '';
+            hits.forEach(s => { const b = document.createElement('button'); b.className = 'text-left px-3 py-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200'; b.textContent = s.t; b.onclick = () => tuneGuess(s); $t('tuneSug').appendChild(b); });
+            tuneS.firstHit = hits[0];
+        }
+        function openTune() { audio.init(); tuneS.open = true; $t('tuneView').style.display = 'block'; if (!tuneS.song) tuneNew(); else tuneRender(); }
+        function closeTune() { tuneStop(); tuneS.open = false; $t('tuneView').style.display = 'none'; }
+        $t('tuneClose').onclick = closeTune;
+        $t('tunePlay').onclick = () => tunePlay(tuneS.over ? 999 : TUNE_LEN[tuneS.tries]);
+        $t('tuneSkip').onclick = () => tuneGuess(null);
+        $t('tuneNext').onclick = tuneNew;
+        $t('tuneInput').oninput = tuneSuggest;
+        $t('tuneInput').onkeydown = e => { if (e.key === 'Enter' && tuneS.firstHit && $t('tuneInput').value) tuneGuess(tuneS.firstHit); };
+        document.addEventListener('keydown', e => { if (e.key === 'Escape' && tuneS.open) closeTune(); });
+
+        const PREVIEW = {
+            angle: g => ({ angle: g.val }), velocity: g => ({ speed: g.val }), quantity: g => ({ count: Math.round(g.val) }),
+            strobe: g => ({ hz: g.val }), duo_balance: g => ({ weight: g.val }), shape: g => g, spin: g => ({ rpm: g.val }),
+            micro_gap: g => ({ gap: g.val }), chroma: g => ({ c: g.val }), duo_radar: g => g
+        };
+        const REL = { echo_gap: ['gap', 2.5], micro_gap: ['gap', 1.5], spin: ['rpm', 3], chroma: ['c', 1.5], tunnel: ['t', 3.5] };
+        const cdiff = (a, b) => { const d = Math.abs(a - b) % 360; return d > 180 ? 360 - d : d; };
+        const circMean = (a, b) => { const r = Math.PI / 180; const x = Math.cos(a * r) + Math.cos(b * r), y = Math.sin(a * r) + Math.sin(b * r); return ((Math.atan2(y, x) / r) + 360) % 360; };
+        function stopRecallAnim() { cancelAnimationFrame(state.recallAnim); }
+        function startPreview() {
+            stopRecallAnim();
+            const t0 = performance.now();
+            const ctx = recallCanvas.getContext('2d');
+            const loop = (now) => {
+                ctx.clearRect(0, 0, recallCanvas.width, recallCanvas.height);
+                if (state.guess && PREVIEW[state.mode]) renderRevealCanvas(ctx, now - t0, PREVIEW[state.mode](state.guess), recallCanvas.width, recallCanvas.height);
+                state.recallAnim = requestAnimationFrame(loop);
+            };
+            state.recallAnim = requestAnimationFrame(loop);
+        }
+        document.getElementById('soundToggleBtn').onclick = () => { audio.enabled = !audio.enabled; document.getElementById('soundIcon').textContent = audio.enabled ? '🔊' : '🔇'; };
+        document.getElementById('dailyChallengeBtn').onclick = () => { const keys = Object.keys(MODES); launchGame(keys[Math.floor(Date.now() / 86400000) % keys.length]); };
+
+        // Initialize application on startup
+        window.onload = () => {
+            renderHub();
+        };
+    </script>
+</body>
+</html>
