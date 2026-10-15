@@ -1,0 +1,75 @@
+body {
+    background-color: #05070d;
+    color: #f3f4f6;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.glass-panel {
+    background: rgba(14, 19, 32, 0.85);
+    backdrop-filter: blur(18px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-card {
+    background: linear-gradient(135deg, rgba(14, 19, 32, 0.9) 0%, rgba(20, 27, 45, 0.7) 100%);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    transition: all 0.25s ease;
+}
+
+.glass-card:hover {
+    border-color: rgba(168, 85, 247, 0.4);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px -10px rgba(168, 85, 247, 0.25);
+}
+
+/* Custom Range Slider Styling */
+input[type=range] {
+    -webkit-appearance: none;
+    appearance: none;
+    background: #1e293b;
+    height: 10px;
+    border-radius: 999px;
+    outline: none;
+    width: 100%;
+}
+
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 3px solid #a855f7;
+    cursor: pointer;
+    box-shadow: 0 0 12px rgba(168, 85, 247, 0.6);
+    transition: transform 0.1s ease, background 0.1s ease;
+}
+
+input[type=range]::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+    background: #f8fafc;
+}
+
+.radar-grid {
+    background-image: radial-gradient(rgba(6, 182, 212, 0.15) 1px, transparent 0);
+    background-size: 24px 24px;
+}
+
+.pro-mode-active {
+    border-color: rgba(244, 63, 94, 0.6) !important;
+    box-shadow: 0 0 20px rgba(244, 63, 94, 0.2);
+}
+
+::-webkit-scrollbar {
+    width: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #05070d;
+}
+::-webkit-scrollbar-thumb {
+    background: #1b2438;
+    border-radius: 3px;
+}

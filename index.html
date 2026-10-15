@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="de" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXUS LAB - Sensory Perception Suite & Arcade</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Space Grotesk', 'monospace'],
+                    },
+                    colors: {
+                        nexus: {
+                            bg: '#05070d',
+                            card: '#0e1320',
+                            border: '#1b2438',
+                            cyan: '#06b6d4',
+                            purple: '#a855f7',
+                            amber: '#f59e0b',
+                            rose: '#f43f5e',
+                            emerald: '#10b981',
+                            indigo: '#6366f1'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#05070d">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Nexus Lab">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="icon" href="icon-192.png">
+</head>
+<body class="min-h-screen flex flex-col justify-between items-center p-3 sm:p-6 font-sans">
+
+    <header class="w-full max-w-4xl flex flex-wrap items-center justify-between py-3 border-b border-slate-800/80 mb-6 gap-3">
+        <div class="flex items-center gap-3 cursor-pointer" id="logoBtn">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 via-purple-600 to-rose-500 flex items-center justify-center font-mono font-black text-xl text-white shadow-lg shadow-purple-500/20">
+                NL
+            </div>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight font-mono text-white flex items-center gap-2">
+                    NEXUS <span class="text-xs px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">LAB</span>
+                </h1>
+                <p class="text-xs text-slate-400">Sinnes- Lab (20 Disziplinen incl. Koop Mittelwert & 1v1)</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <!-- Game Play Mode Selector (Solo / Duel / Co-Op) -->
+            <div class="flex bg-slate-900/90 border border-slate-800 p-1 rounded-xl font-mono text-xs" id="modeHeaderToggle">
+                <button data-mode="solo" class="mode-select-btn px-2.5 py-1 rounded-lg text-white bg-purple-600 transition flex items-center gap-1">
+                    <span class="text-[10px]">👤</span> <span class="hidden sm:inline">Solo</span>
+                </button>
+                <button data-mode="duel" class="mode-select-btn px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition flex items-center gap-1">
+                    <span class="text-[10px]">⚔️</span> <span class="hidden sm:inline">Duell (1v1)</span>
+                </button>
+                <button data-mode="coop" class="mode-select-btn px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition flex items-center gap-1" title="Mittelwert aus beiden Spielereingaben">
+                    <span class="text-[10px]">🤝</span> <span class="hidden sm:inline">Koop (Mittelwert)</span>
+                </button>
+            </div>
+
+            <!-- Pro Mode Toggle -->
+            <button id="proModeBtn" class="px-3 py-2 rounded-xl glass-panel text-slate-400 hover:text-white transition flex items-center gap-1.5 text-xs font-mono border border-slate-800" title="Streamer Hardcore Pro-Modus">
+                <span class="text-slate-500" id="proModeIcon">🔥</span>
+                <span class="hidden sm:inline">PRO</span>
+            </button>
+
+            <!-- Sound Toggle -->
+            <button id="soundToggleBtn" class="p-2.5 rounded-xl glass-panel text-slate-300 hover:text-white hover:bg-slate-800 transition" title="Ton umschalten">
+                <span id="soundIcon" class="text-sm">🔊</span>
+            </button>
+            <!-- Musik Toggle -->
+            <button id="musicToggleBtn" class="p-2.5 rounded-xl glass-panel text-slate-300 hover:text-white hover:bg-slate-800 transition" title="Hintergrundmusik an/aus">
+                <span id="musicIcon" class="text-sm">🎵</span>
+            </button>
+            <!-- Discord -->
+            <a id="discordBtn" href="https://discord.gg/6drX9t44Sa" target="_blank" rel="noopener noreferrer" aria-label="Discord beitreten" title="Discord beitreten" class="w-10 h-10 shrink-0 rounded-xl overflow-hidden hover:scale-105 transition shadow-lg shadow-indigo-500/20">
+                <img src="data:image/png;base64,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" alt="Discord" class="w-full h-full block">
+            </a>
+
+            <!-- Stats Modal Toggle -->
+            <button id="statsModalBtn" class="p-2.5 rounded-xl glass-panel text-slate-300 hover:text-white hover:bg-slate-800 transition" title="Sinnes-Profil & Stats">
+                <span class="text-sm text-cyan-400">📊</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- VIEW 1: HUB / LANDING PAGE -->
+    <main id="hubView" class="w-full max-w-4xl flex flex-col gap-6 my-auto">
+        
+        <!-- Welcome Hero Banner -->
+        <div class="glass-panel p-6 sm:p-8 rounded-3xl border border-purple-500/20 bg-gradient-to-r from-slate-950 via-slate-900 to-purple-950/40 relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div class="max-w-xl relative z-10">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="text-xs font-mono font-bold uppercase tracking-widest text-purple-400 bg-purple-500/10 px-3 py-1 rounded-full border border-purple-500/20">Official Nexus Collection</span>
+                    <span id="proModeBadge" class="hidden text-xs font-mono font-bold uppercase tracking-widest text-rose-400 bg-rose-500/10 px-3 py-1 rounded-full border border-rose-500/30">🔥 PRO ACTIVE</span>
+                </div>
+                <h2 class="text-2xl sm:text-3xl font-bold text-white font-mono mb-2">Solo, 1v1 oder Koop Mittelwert?</h2>
+                <p class="text-xs sm:text-sm text-slate-300 leading-relaxed mb-4">
+                    Im <b>Koop-Modus</b> stellen jetzt beide Spieler nacheinander ihren Wert ein. Das System berechnet exakt den <b>Mittelwert (Average)</b> eurer zwei Eingaben für die Team-Punktzahl!
+                </p>
+                <div class="flex flex-wrap items-center gap-4 text-xs font-mono text-slate-400">
+                    <span class="flex items-center gap-1.5"><span class="text-cyan-400">🎯</span> <span><span id="heroCount">20</span> Disziplinen</span></span>
+                    <span class="flex items-center gap-1.5"><span class="text-amber-400">🧮</span> Koop-Mittelwert System</span>
+                    <span class="flex items-center gap-1.5"><span class="text-purple-400">🧠</span> Live-Skill-Radar</span>
+                </div>
+            </div>
+
+            <!-- Daily Challenge Special Button -->
+            <button id="dailyChallengeBtn" class="w-full md:w-auto px-6 py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-rose-500 to-purple-600 hover:opacity-95 text-white font-mono font-bold text-xs tracking-wider shadow-lg shadow-purple-500/20 flex items-center justify-center gap-3 shrink-0 transition transform hover:scale-105 active:scale-95 border border-white/20">
+                <span class="text-xl text-amber-200">📅</span>
+                <div class="text-left">
+                    <div class="text-[10px] text-amber-200 uppercase font-mono">Tages-Challenge</div>
+                    <div class="text-sm font-black text-white">SENSORY IQ TEST</div>
+                </div>
+            </button>
+        </div>
+
+        <div id="rankCard"></div>
+
+        <!-- Filter Tabs -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-1 border-b border-slate-800">
+            <button data-filter="all" class="hub-tab-btn active px-4 py-2 rounded-xl text-xs font-mono font-semibold transition bg-purple-600 text-white shadow">
+                Alle Spiele (14)
+            </button>
+            <button data-filter="duo" class="hub-tab-btn px-4 py-2 rounded-xl text-xs font-mono font-semibold text-slate-400 hover:text-white transition">
+                ⚡ Koop & 1v1 Special (3)
+            </button>
+            <button data-filter="dialed" class="hub-tab-btn px-4 py-2 rounded-xl text-xs font-mono font-semibold text-slate-400 hover:text-white transition">
+                Klassiker (4)
+            </button>
+            <button data-filter="nexus" class="hub-tab-btn px-4 py-2 rounded-xl text-xs font-mono font-semibold text-slate-400 hover:text-white transition">
+                Nexus Lab Originals (7)
+            </button>
+            <button data-filter="arcade" class="hub-tab-btn px-4 py-2 rounded-xl text-xs font-mono font-semibold text-slate-400 hover:text-white transition">
+                🕹️ Arcade (4)
+            </button>
+        </div>
+
+        <!-- Game Cards Grid -->
+        <div id="gamesGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- Dynamic Game Cards Injected via JavaScript -->
+        </div>
+    </main>
+
+    <!-- VIEW 2: GAME ARENA -->
+    <main id="arenaView" class="w-full max-w-2xl my-auto flex-col items-center hidden">
+        
+        <!-- Navigation Bar inside game -->
+        <div class="w-full flex items-center justify-between mb-3">
+            <button id="backToHubBtn" class="text-xs font-mono text-slate-400 hover:text-white transition flex items-center gap-2 glass-panel px-3 py-1.5 rounded-xl border border-slate-800">
+                <span class="">←</span> Hub / Übersicht
+            </button>
+            <span id="gameTitleBadge" class="text-xs font-mono text-purple-400 font-bold px-3 py-1.5 rounded-xl glass-panel border border-purple-500/30">
+                COLOR RECALL
+            </span>
+        </div>
+
+        <!-- Round & Score Bar -->
+        <div class="w-full glass-panel rounded-2xl p-4 mb-4 flex items-center justify-between border border-slate-800">
+            <div class="flex flex-col">
+                <span class="text-[10px] uppercase font-mono tracking-wider text-slate-400">Runde</span>
+                <span id="roundDisplay" class="text-lg font-bold font-mono text-purple-400">1 / 5</span>
+            </div>
+            <div class="flex gap-1.5" id="roundDots">
+                <!-- Round indicator dots generated via JS -->
+            </div>
+            <div class="flex flex-col items-end" id="scoreBoardContainer">
+                <span id="scoreBoardLabel" class="text-[10px] uppercase font-mono tracking-wider text-slate-400">Gesamtpunkte</span>
+                <span id="totalScoreDisplay" class="text-lg font-bold font-mono text-emerald-400">0.00 <span class="text-xs text-slate-500">/ 50</span></span>
+            </div>
+        </div>
+
+        <!-- Stage Container -->
+        <div id="gameContainer" class="w-full glass-panel rounded-3xl p-6 sm:p-8 flex flex-col items-center justify-center relative min-h-[440px] shadow-2xl border border-slate-800/80 overflow-hidden">
+
+            <!-- Reveal Phase -->
+            <div id="stageReveal" class="w-full flex flex-col items-center justify-center gap-4 transition-all duration-300">
+                <div id="revealSubtitle" class="text-xs font-mono uppercase tracking-widest text-purple-400">Einprägen...</div>
+
+                <!-- Visual Canvas Frame -->
+                <div id="visualFrame" class="w-64 h-64 sm:w-72 sm:h-72 rounded-3xl border-2 border-slate-700/60 bg-slate-950/60 shadow-2xl flex items-center justify-center relative overflow-hidden radar-grid">
+                    <canvas id="gameCanvas" class="w-full h-full block cursor-pointer"></canvas>
+                </div>
+
+                <!-- Reveal Countdown Bar -->
+                <div class="w-full max-w-xs bg-slate-800/60 h-2 rounded-full overflow-hidden mt-1">
+                    <div id="revealTimerBar" class="bg-purple-500 h-full w-full transition-all duration-75"></div>
+                </div>
+                <div id="revealHint" class="text-xs text-slate-400 text-center font-mono">Präge dir den Reiz exakt ein!</div>
+            </div>
+
+            <!-- Recall Phase -->
+            <div id="stageRecall" class="w-full flex flex-col items-center gap-5 hidden transition-all duration-300">
+                <div id="playerTurnBanner" class="w-full text-center py-2 px-4 rounded-xl font-mono text-xs font-bold uppercase tracking-widest bg-purple-500/10 text-purple-300 border border-purple-500/30 flex items-center justify-center gap-2">
+                    <span class="">🧠</span> <span id="playerTurnText">Aus dem Gedächtnis nachbauen</span>
+                </div>
+
+                <!-- Recall Frame -->
+                <div id="recallFrame" class="w-64 h-64 sm:w-72 sm:h-72 rounded-3xl border-2 border-purple-500/40 bg-slate-950/80 shadow-2xl flex items-center justify-center relative overflow-hidden radar-grid">
+                    <canvas id="recallCanvas" class="w-full h-full block cursor-pointer"></canvas>
+                </div>
+
+                <!-- Controls Panel -->
+                <div id="controlsContainer" class="w-full max-w-md flex flex-col gap-3 min-h-[90px] justify-center">
+                    <!-- Dynamic controls rendered via JS -->
+                </div>
+
+                <!-- Confirm Guess Button -->
+                <button id="submitGuessBtn" class="w-full max-w-md py-3.5 rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-500 text-white font-bold text-sm tracking-wide shadow-lg shadow-purple-500/20 hover:opacity-95 active:scale-[0.98] transition flex items-center justify-center gap-2">
+                    <span class="">✅</span> <span id="submitGuessBtnText">Bestätigen & Werten</span>
+                </button>
+            </div>
+
+            <!-- Result Phase -->
+            <div id="stageResult" class="w-full flex flex-col items-center justify-center gap-4 hidden transition-all duration-300">
+                <div class="text-xs font-mono uppercase tracking-widest text-slate-400" id="resultPhaseTitle">Rundenergebnis</div>
+                
+                <div id="roundScoreBadge" class="text-4xl sm:text-5xl font-black font-mono text-emerald-400 my-1">
+                    +9.85 <span class="text-lg text-slate-400">/ 10</span>
+                </div>
+
+                <!-- Comparison Container -->
+                <div id="comparisonContainer" class="grid grid-cols-2 gap-3 w-full max-w-md my-2">
+                    <!-- Target vs Guess side-by-side comparison boxes -->
+                </div>
+
+                <button id="nextRoundBtn" class="w-full max-w-xs py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-sm transition shadow-lg flex items-center justify-center gap-2">
+                    <span>Nächste Runde</span> <span class="">→</span>
+                </button>
+            </div>
+
+            <!-- Start Overlay -->
+            <div id="startOverlay" class="absolute inset-0 glass-panel bg-slate-950/95 backdrop-blur-md z-20 flex flex-col items-center justify-center p-6 text-center">
+                <div id="modeIconBadge" class="w-20 h-20 rounded-3xl bg-purple-500/10 border border-purple-500/30 text-purple-400 text-3xl flex items-center justify-center mb-4 shadow-2xl">
+                    <span class="">🎨</span>
+                </div>
+                <h2 id="modeTitle" class="text-2xl font-bold text-white mb-1 font-mono">Color Recall</h2>
+                
+                <div class="flex items-center gap-2 my-3 p-1 rounded-xl bg-slate-900 border border-slate-800">
+                    <button data-overlay-mode="solo" class="overlay-mode-btn text-xs font-mono px-3 py-1.5 rounded-lg text-white bg-purple-600">👤 Solo</button>
+                    <button data-overlay-mode="duel" class="overlay-mode-btn text-xs font-mono px-3 py-1.5 rounded-lg text-slate-400 hover:text-white">⚔️ 1v1 Duell</button>
+                    <button data-overlay-mode="coop" class="overlay-mode-btn text-xs font-mono px-3 py-1.5 rounded-lg text-slate-400 hover:text-white" title="Beide stellen ein, Mittelwert entscheidet">🤝 Koop (Mittelwert)</button>
+                </div>
+
+                <p id="modeDescription" class="text-xs sm:text-sm text-slate-300 max-w-sm mb-6 leading-relaxed">
+                    Präge dir den Farbton ein und rekonstruiere ihn mit HSL-Reglern!
+                </p>
+                <button id="startGameBtn" class="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-sm tracking-wide shadow-lg shadow-purple-500/30 hover:scale-105 active:scale-95 transition flex items-center justify-center gap-2">
+                    <span class="">▶</span> SPIEL STARTEN (5 RUNDEN)
+                </button>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Summary Modal -->
+    <div id="summaryModal" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="glass-panel bg-slate-900 border border-purple-500/30 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl flex flex-col items-center text-center relative overflow-hidden">
+            <div class="w-16 h-16 rounded-2xl bg-purple-500/20 text-purple-400 flex items-center justify-center text-3xl mb-3 border border-purple-500/30">
+                ⚡
+            </div>
+            <span class="text-xs uppercase font-mono tracking-widest text-purple-400">Sensory Endergebnis</span>
+            <h3 id="summaryScoreDisplay" class="text-4xl font-black font-mono text-white my-2">44.15 <span class="text-lg text-slate-400">/ 50</span></h3>
+            <p id="summaryRankTitle" class="text-sm font-semibold text-cyan-400 mb-4">Quanten-Gehirn 🧠⚡</p>
+
+            <div class="w-full bg-slate-950/80 rounded-2xl p-4 mb-6 flex flex-col gap-2 text-xs font-mono text-slate-300 border border-slate-800 max-h-48 overflow-y-auto" id="summaryRoundsList">
+                <!-- Round scores list -->
+            </div>
+
+            <div class="flex gap-3 w-full">
+                <button id="copyShareBtn" class="flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition border border-slate-700 flex items-center justify-center gap-2">
+                    <span class="">🔗</span> Teilen
+                </button>
+                <button id="cardShareBtn" class="flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition border border-slate-700 flex items-center justify-center gap-2">
+                    <span class="">🖼️</span> Karte
+                </button>
+                <button id="playAgainBtn" class="flex-1 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition shadow-lg flex items-center justify-center gap-2">
+                    <span class="">🔄</span> Nochmal
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats & Sensory Radar Modal -->
+    <div id="statsModal" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="glass-panel bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-xl w-full shadow-2xl flex flex-col items-center text-center max-h-[90vh] overflow-y-auto">
+            <h3 class="text-xl font-bold font-mono text-white mb-1">Dein Sinnes-Profil & Stats</h3>
+            <p class="text-xs text-slate-400 mb-4 font-mono">Analyse aller Wahrnehmungs-Disziplinen</p>
+
+            <!-- Spider/Radar Skill Chart Canvas -->
+            <div class="w-64 h-64 relative mb-4">
+                <canvas id="radarChartCanvas" class="w-full h-full block"></canvas>
+            </div>
+
+            <div id="statsList" class="w-full flex flex-col gap-2 mb-6 max-h-[220px] overflow-y-auto pr-1">
+                <!-- Injected via JS -->
+            </div>
+            <button id="closeStatsBtn" class="w-full py-2.5 rounded-xl bg-slate-800 text-white font-bold text-xs hover:bg-slate-700 transition">Schließen</button>
+        </div>
+    </div>
+
+    <footer class="text-[11px] text-slate-500 text-center my-3 font-mono">
+        NEXUS LAB · <a href="impressum.html" class="hover:text-slate-300 underline">Impressum</a> · <a href="datenschutz.html" class="hover:text-slate-300 underline">Datenschutz</a>
+    </footer>
+
+    <div id="arcadeView" style="display:none;touch-action:none" class="fixed inset-0 z-50 flex-col items-center bg-[#05070d]/95 p-3 gap-2">
+    <div class="w-full max-w-md flex items-center justify-between font-mono text-xs text-slate-300">
+        <span id="arTitle" class="font-bold text-white"></span>
+        <span>Score <b id="arScore" class="text-emerald-400">0</b> · Best <b id="arBest" class="text-amber-300">0</b></span>
+        <button id="arShare" class="px-3 py-1.5 rounded-lg glass-panel hover:bg-slate-800" title="Ergebnis als Bild teilen">🖼️</button>
+        <button id="arClose" class="px-3 py-1.5 rounded-lg glass-panel hover:bg-slate-800">✕ Zurück</button>
+    </div>
+    <canvas id="arCanvas" width="360" height="480" style="max-width:100%;max-height:calc(100vh - 110px);aspect-ratio:3/4;background:#0b1020;border:1px solid #334155;border-radius:16px;touch-action:none"></canvas>
+</div>
+<div id="atomView" style="display:none" class="fixed inset-0 z-50 bg-[#05070d]">
+    <canvas id="atomCanvas" class="absolute inset-0 w-full h-full" style="touch-action:none;cursor:crosshair"></canvas>
+    <div class="absolute top-3 left-3 right-3 flex items-center justify-between font-mono text-xs text-slate-300 pointer-events-none">
+        <span class="font-bold text-white">⚛️ ATOM LAB</span>
+        <span class="hidden sm:inline text-slate-500">Atom greifen &amp; werfen · Leere Fläche halten = Wirbel · Klick = neues Atom</span>
+        <button id="atomClose" class="pointer-events-auto px-3 py-1.5 rounded-lg glass-panel hover:bg-slate-800">✕ Zurück</button>
+    </div>
+    <div class="absolute bottom-3 left-2 right-2 flex flex-col items-center gap-2 font-mono text-xs text-slate-300">
+        <div class="flex flex-wrap justify-center gap-2">
+            <button id="atomModegas" class="px-3 py-2 rounded-xl glass-panel text-slate-200 hover:bg-slate-800">🌫️ Gas</button>
+            <button id="atomModenet" class="px-3 py-2 rounded-xl glass-panel text-slate-200 hover:bg-slate-800">🕸️ Netz</button>
+            <button id="atomModecrystal" class="px-3 py-2 rounded-xl glass-panel text-slate-200 hover:bg-slate-800">💎 Kristall</button>
+            <button id="atomGrav" class="px-3 py-2 rounded-xl glass-panel text-slate-200 hover:bg-slate-800">🌍 Schwerkraft aus</button>
+            <button id="atomBondBtn" class="px-3 py-2 rounded-xl glass-panel text-slate-200 hover:bg-slate-800">🔗 Bindungen an</button>
+            <button id="atomReset" class="px-3 py-2 rounded-xl glass-panel text-slate-200 hover:bg-slate-800">🔄 Reset</button>
+        </div>
+        <div class="flex flex-wrap justify-center items-center gap-x-5 gap-y-1 glass-panel rounded-xl px-4 py-2">
+            <label class="flex items-center gap-2">Atome <input id="atomCount" type="range" min="10" max="300" value="90" class="w-24"><b id="atomCountV" class="w-7 text-white">90</b></label>
+            <label class="flex items-center gap-2">Tempo <input id="atomSpeed" type="range" min="0" max="3" step="0.1" value="1" class="w-24"><b id="atomSpeedV" class="w-9 text-white">1.0×</b></label>
+            <label class="flex items-center gap-2">Kraft <input id="atomForce" type="range" min="0.2" max="3" step="0.1" value="1" class="w-24"><b id="atomForceV" class="w-9 text-white">1.0×</b></label>
+        </div>
+    </div>
+</div>
+<script src="audio.js"></script>
+<script src="modes.js"></script>
+<script src="core.js"></script>
+<script src="perception.js"></script>
+<script src="music.js"></script>
+<script src="arcade-core.js"></script>
+<script src="arcade-games.js"></script>
+<script src="atom.js"></script>
+<script src="pong.js"></script>
+<script src="gravity.js"></script>
+<script src="orbit.js"></script>
+<script src="pinball.js"></script>
+<script src="pitch.js"></script>
+<script src="rhythm.js"></script>
+<script src="flash.js"></script>
+<script src="reactsplit.js"></script>
+<script src="periph.js"></script>
+<script src="odd.js"></script>
+<script src="rank.js"></script>
+<script src="share.js"></script>
+<script src="main.js"></script>
+<script src="boot.js"></script>
+</body>
+</html>
