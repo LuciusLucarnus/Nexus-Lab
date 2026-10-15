@@ -1214,6 +1214,7 @@
                     state.guess.val = parseFloat(e.target.value);
                     if (!state.proMode) document.getElementById('balVal').textContent = `${state.guess.val}%`;
                 };
+                startPreview();
 
             } else if (m === 'color') {
                 state.guess = { h: 180, s: 50, l: 50 };
